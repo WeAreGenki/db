@@ -1,0 +1,17 @@
+{
+  "presets": [
+    ["@babel/env", {
+      // "debug": true,
+      "shippedProposals": true,
+      "modules": false,
+      "loose": true
+    }],
+    "@babel/stage-2"
+  ],
+  // "plugins": ["@babel/transform-runtime"],
+  "env": {
+    "test": {
+      "presets": ["@babel/env", "@babel/stage-2"]
+    }
+  }
+}
