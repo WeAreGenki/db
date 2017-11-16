@@ -338,8 +338,8 @@ function () {
    * Insert doc if new or update doc if it exists
    * (based on the PouchDB upsert plugin)
    * @see https://github.com/pouchdb/upsert/blob/master/index.js
-   * @param {string} docId - The doc to edit
-   * @param {Function} diffFun -
+   * @param {string} docId - _id of the doc to edit
+   * @param {Function} diffFun - A function returning the changes requested
    */
   _proto.upsert = function () {
     var _ref3 = _asyncToGenerator(
@@ -475,9 +475,7 @@ function () {
     }
 
     sequence += 1;
-    var i = sequence; // console.debug(i, method, opts);
-    // console.time(i);
-
+    var i = sequence;
     return new Promise(function (resolve, reject) {
       resolves.set(i, resolve);
       rejects.set(i, reject);
@@ -493,7 +491,7 @@ function () {
 
 
   _proto._receive = function _receive(event) {
-    var data = JSON.parse(event.data); // console.timeEnd(data.i);
+    var data = JSON.parse(event.data);
 
     if (data.i !== undefined) {
       // resolve or reject promise if message contains res or rej
