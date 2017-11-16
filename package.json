@@ -4,13 +4,13 @@
   "description": "Vue + vuex plugin for reactive PouchDB in a web worker",
   "repository": "https://github.com/WeAreGenki/db",
   "author": "Max Milton <max@wearegenki.com>",
-  "license": "Apache",
-  "main": "dist/db.js",
-  "module": "dist/db.esm.js",
+  "license": "Apache-2.0",
+  "main": "dist/db.cjs.js",
+  "module": "dist/db.js",
   "files": ["dist"],
   "scripts": {
-    "build": "rollup -c",
-    "dev": "rollup -c -w",
+    "build": "NODE_ENV='production' rollup -c",
+    "dev": "NODE_ENV='development' rollup -c -w",
     "test": "node test/test.js",
     "pretest": "npm run build"
   },
@@ -19,6 +19,7 @@
     "vuex": "^3.0.1"
   },
   "dependencies": {
+    "@babel/runtime": "^7.0.0-beta.32",
     "pouchdb-adapter-http": "^6.3.4",
     "pouchdb-adapter-idb": "^6.3.4",
     "pouchdb-adapter-websql": "^6.3.4",
@@ -30,9 +31,9 @@
     "spark-md5": "^3.0.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.0.0-beta.32",
     "@babel/core": "^7.0.0-beta.32",
     "@babel/plugin-transform-runtime": "^7.0.0-beta.32",
+    "@babel/plugin-external-helpers": "^7.0.0-beta.32",
     "@babel/preset-env": "^7.0.0-beta.32",
     "@babel/preset-stage-2": "^7.0.0-beta.32",
     "@babel/register": "^7.0.0-beta.32",
@@ -40,24 +41,15 @@
     "babel-jest": "^21.2.0",
     "eslint": "^4.11.0",
     "eslint-config-airbnb-base": "^12.1.0",
-    "eslint-friendly-formatter": "^3.0.0",
-    "eslint-import-resolver-webpack": "^0.8.3",
     "eslint-plugin-compat": "^2.1.0",
-    "eslint-plugin-html": "^4.0.0",
     "eslint-plugin-import": "^2.8.0",
     "eslint-plugin-jest": "^21.3.2",
-    "eslint-plugin-vue": "^3.13.0",
     "jest": "^21.2.1",
     "pouchdb-adapter-memory": "^6.3.4",
     "rollup": "^0.51.5",
-    "rollup-plugin-babel": "^3.0.2",
+    "rollup-plugin-babel": "^4.0.0-beta.0",
     "rollup-plugin-commonjs": "^8.2.6",
-    "rollup-plugin-multi-entry": "^2.0.2",
-    "rollup-plugin-node-resolve": "^3.0.0",
-    "vue-jest": "^1.0.3",
-    "vue-template-compiler": "^2.5.3",
-    "vue-test-utils": "git+https://github.com/vuejs/vue-test-utils.git",
-    "worker-loader": "^1.1.0"
+    "rollup-plugin-node-resolve": "^3.0.0"
   },
   "jest": {
     "moduleFileExtensions": [

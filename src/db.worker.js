@@ -28,9 +28,10 @@ import AdapterHttp from 'pouchdb-adapter-http';
 import Replication from 'pouchdb-replication';
 import Mapreduce from 'pouchdb-mapreduce';
 import Find from 'pouchdb-find';
+import { rev } from 'pouchdb-utils';
 import SparkMD5 from 'spark-md5';
 
-// initialise PouchDB plugins
+// Initialise PouchDB plugins
 if (process.env.NODE_ENV === 'test') {
   // in-memory database for testing
   PouchDB.plugin(require('pouchdb-adapter-memory')); // eslint-disable-line global-require
@@ -207,26 +208,21 @@ async function handleChange(change, oneShot) {
       batch.push(runQuery(change.key, change.query));
     }
 
-    const processItem = (item) => {
-      item.res.then((res) => {
-        if (res.docs) {
-          // mango query result
-          send({ commit: `${namespace}/setQueryResult`, data: { key: item.key, data: res.docs }});
-        } else {
-          // allDocs result
-          for (const row of res.rows) {
-            send({ commit: `${namespace}/setQueryResult`, data: { key: row.id, data: row.doc }});
-          }
+    const processItem = async (item) => {
+      const newItem = await item;
+      const res = await newItem.res;
+
+      if (res.docs) {
+        // mango query result
+        send({ commit: `${namespace}/setQueryResult`, data: { key: newItem.key, data: res.docs }});
+      } else {
+        // allDocs result
+        for (const row of res.rows) {
+          send({ commit: `${namespace}/setQueryResult`, data: { key: row.id, data: row.doc }});
         }
-        // FIXME: REMOVE once done setting up indexes
-        // console.timeEnd('regQuery');
-      });
+      }
     };
 
-    // FIXME: REMOVE IF BELOW MAP WORKS
-    // for await (const item of batch) {
-    //   processItem(item);
-    // }
     batch.map(processItem);
   }
 }
@@ -316,6 +312,10 @@ function waitUntil(i, docId, newOnly, timeout) {
   }, timeout);
 }
 
+function dbRev(i) {
+  send({ i, res: rev() });
+}
+
 function md5(i, string) {
   send({ i, res: SparkMD5.hash(string) });
 }
@@ -355,6 +355,8 @@ function receive(event) { // eslint-disable-line no-undef
     bulkDocs(data.bulkDocs.i, data.bulkDocs.opts[0], data.bulkDocs.opts[1]);
   } else if (data.local !== undefined) {
     init(data);
+  } else if (data.rev !== undefined) {
+    dbRev(data.rev.i);
   } else if (data.md5 !== undefined) {
     md5(data.md5.i, data.md5.opts[0]);
   } else if (data.compact !== undefined) {
@@ -371,6 +373,3 @@ function receive(event) { // eslint-disable-line no-undef
     throw new Error('Unknown event:', event);
   }
 }
-
-// Empty export to stop webpack and eslint complaining
-export default {};

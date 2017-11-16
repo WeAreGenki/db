@@ -29,7 +29,6 @@
 //  ↳ REF: https://github.com/pouchdb/pouchdb/pull/6660
 
 import Vue from 'vue';
-import Worker from './db.worker';
 
 let sequence = 0;
 // use Map for better performance (in Chrome, other browsers too as they optimise Map)
@@ -52,7 +51,7 @@ function install(VueInstance) {
 }
 
 class Database {
-  constructor({ local = 'PouchDB', remote, filter, vuexStore, indexes = [], queries = [], namespace = 'wagdb', sync = true }) {
+  constructor({ Worker, local = 'PouchDB', remote, filter, vuexStore, indexes = [], queries = [], namespace = 'db', sync = true }) {
     this.vuexStore = vuexStore;
     this.namespace = namespace;
     this.worker = new Worker();
@@ -147,9 +146,15 @@ class Database {
   unregister = (key, isDoc) => this.worker.postMessage(JSON.stringify({ unregister: { key, isDoc }}))
 
   /**
+   * Generate a doc revision ID
+   * @returns {Promise} - The doc revision ID string
+   */
+  rev = () => this._send('rev')
+
+  /**
    * Get an MD5 hash
    * @param {string} string - The input you want hashed
-   * @returns {Promise} - The MD5 hash
+   * @returns {Promise} - Resulting MD5 hash
    */
   md5 = string => this._send('md5', string)
 
@@ -157,8 +162,8 @@ class Database {
    * Insert doc if new or update doc if it exists
    * (based on the PouchDB upsert plugin)
    * @see https://github.com/pouchdb/upsert/blob/master/index.js
-   * @param {string} docId - The doc to edit
-   * @param {Function} diffFun -
+   * @param {string} docId - _id of the doc to edit
+   * @param {Function} diffFun - A function returning the changes requested
    */
   async upsert(docId, diffFun) {
     let doc;
@@ -208,9 +213,6 @@ class Database {
     sequence += 1;
     const i = sequence;
 
-    // console.debug(i, method, opts);
-    // console.time(i);
-
     return new Promise((resolve, reject) => {
       resolves.set(i, resolve);
       rejects.set(i, reject);
@@ -222,8 +224,6 @@ class Database {
   // Incoming message event handler
   _receive(event) {
     const data = JSON.parse(event.data);
-
-    // console.timeEnd(data.i);
 
     if (data.i !== undefined) {
       // resolve or reject promise if message contains res or rej
