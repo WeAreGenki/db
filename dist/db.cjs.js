@@ -25,11 +25,14 @@ var Vue = _interopDefault(require('vue'));
  */
 // NOTE: Web worker communication sent as a JSON string for better performance
 // TODO: Logic to handle sync state in vuex OR remove this functionality
-// TODO: Use a SharedWorker so that there's only one worker shared between all tabs (minimise perf cost of db sync etc.)
+// TODO: Use a SharedWorker so that there's only one worker shared between all
+// tabs (minimise perf cost of db sync etc.)
 //  ↳ Will need to make sure message ID (sequence) is unique between all tabs
-//    ↳ Actually it may not be necessary, each tab will get a unique port (if I understand correctly...)
+//    ↳ Actually it may not be necessary, each tab will get a unique port (if
+//      I understand correctly...)
 //  ↳ https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker
-//  ↳ Need to test if this will slow things down when multiple tabs are trying to run db queries at the same time
+//  ↳ Need to test if this will slow things down when multiple tabs are trying
+//    to run db queries at the same time
 // TODO: Enable support for couchbase bulkDocs API
 //  ↳ REF: https://github.com/pouchdb/pouchdb/pull/6660
 let sequence = 0; // use Map for better performance (in Chrome, other browsers too as they optimise Map)

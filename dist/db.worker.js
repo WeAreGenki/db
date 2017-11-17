@@ -10945,7 +10945,7 @@ function replication(PouchDB) {
 //  method the message originated from.
 if (process.env.NODE_ENV === 'test') {
   // in-memory database for testing
-  PouchDB$2.plugin(require('pouchdb-adapter-memory')); // eslint-disable-line global-require
+  PouchDB$2.plugin(require('pouchdb-adapter-memory')); // eslint-disable-line
 }
 
 PouchDB$2.plugin(index);
@@ -11133,7 +11133,8 @@ async function handleChange(change, oneShot) {
 
     if (!oneShot) {
       // TODO: Optimise which queries are run based on change.id (?)
-      // FIXME: Wait until initial sync is finished before running (to avoid running many times on first login)
+      // FIXME: Wait until initial sync is finished before running (to avoid
+      // running many times on first login)
       console.debug('CHANGE', change);
       queries.forEach((query, key) => {
         batch.push(runQuery(key, query));
