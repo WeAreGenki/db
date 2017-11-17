@@ -60,7 +60,6 @@ class Database {
     remote,
     filter,
     vuexStore,
-    indexes = [],
     queries = [],
     namespace = 'db',
     sync = true,
@@ -69,7 +68,7 @@ class Database {
     this.vuexStore = vuexStore;
     this.namespace = namespace;
     this.worker = new Worker();
-    this.opts = { local, remote, filter, indexes, queries, namespace, sync, debug };
+    this.opts = { local, remote, filter, queries, namespace, sync, debug };
     this._init();
   }
 
@@ -118,10 +117,6 @@ class Database {
 
   remove = doc => this._send('remove', doc)
 
-  find = req => this._send('find', req)
-
-  query = (doc, opts) => this._send('query', doc, opts)
-
   allDocs = docs => this._send('allDocs', docs)
 
   bulkDocs = (docs, opts) => this._send('bulkDocs', docs, opts)
@@ -147,8 +142,8 @@ class Database {
 
   /**
    * Register a new reactive database query
-   * @param {(Object|string)} query - Mango query object or doc _id string to watch for changes
-   * @param {string} [key] - Name of the vuex object key (for mango queries only; otherwise key is doc _id)
+   * @param {(Object|string)} query - Query object or doc _id string to watch for changes
+   * @param {string} [key] - Name of the vuex object key (for queries, otherwise doc _id)
    */
   register = (query, key) => this.worker.postMessage(JSON.stringify({ register: { query, key }}))
 

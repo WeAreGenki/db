@@ -23,11 +23,8 @@
 
 import PouchDB from 'pouchdb-core';
 import AdapterIdb from 'pouchdb-adapter-idb';
-import AdapterWebSql from 'pouchdb-adapter-websql';
 import AdapterHttp from 'pouchdb-adapter-http';
 import Replication from 'pouchdb-replication';
-import Mapreduce from 'pouchdb-mapreduce';
-import Find from 'pouchdb-find';
 import { rev } from 'pouchdb-utils';
 import SparkMD5 from 'spark-md5';
 
@@ -37,11 +34,8 @@ if (process.env.NODE_ENV === 'test') {
   PouchDB.plugin(require('pouchdb-adapter-memory')); // eslint-disable-line global-require
 }
 PouchDB.plugin(AdapterIdb);
-PouchDB.plugin(AdapterWebSql);
 PouchDB.plugin(AdapterHttp);
 PouchDB.plugin(Replication);
-PouchDB.plugin(Mapreduce);
-PouchDB.plugin(Find);
 
 let localDB;
 let remoteDB;
@@ -74,8 +68,6 @@ function init(opts) {
     });
   }
 
-  opts.indexes.forEach(index => localDB.createIndex({ index }));
-
   if (queries.size) {
     handleChange({});
   }
@@ -101,18 +93,6 @@ function post(i, doc) {
 
 function remove(i, doc) {
   localDB.remove(doc)
-    .then(res => send({ i, res }))
-    .catch(err => send({ i, rej: err }));
-}
-
-function find(i, req) {
-  localDB.find(req)
-    .then(res => send({ i, res }))
-    .catch(err => send({ i, rej: err }));
-}
-
-function dbQuery(i, doc, opts) {
-  localDB.query(doc, opts)
     .then(res => send({ i, res }))
     .catch(err => send({ i, rej: err }));
 }
@@ -152,24 +132,39 @@ function compact(i) {
     .catch(err => send({ i, rej: err }));
 }
 
-function runQuery(key, query) {
-  return new Promise((resolve, reject) => {
+async function runQuery(key, query) {
+  try {
     let res;
 
-    try {
-      if (key === 'docs') {
-        res = localDB.allDocs({
-          include_docs: true,
-          keys: query,
-        });
-      } else {
-        res = localDB.find(query);
+    if (key === 'docs') {
+      // simple list of doc _ids
+      res = await localDB.allDocs({
+        include_docs: true,
+        keys: query,
+      });
+    } else {
+      // type query with filter and sort
+      let { rows } = await localDB.allDocs({
+        include_docs: true,
+        startkey: query.type,
+        endkey: `${query.type}\ufff0`,
+      });
+
+      if (query.filter !== undefined) {
+        rows = rows.filter(row => row.doc[query.filter.field] === query.filter.value);
       }
-      resolve({ key, res });
-    } catch (err) {
-      reject(err);
+
+      // clean up results so we just have an array of docs
+      res = rows.map(row => row.doc);
+
+      if (query.sort !== undefined) {
+        res = res.sort((a, b) => a[query.sort].localeCompare(b[query.sort]));
+      }
     }
-  });
+    return { key, res };
+  } catch (err) {
+    throw err;
+  }
 }
 
 async function handleChange(change, oneShot) {
@@ -185,29 +180,28 @@ async function handleChange(change, oneShot) {
         batch.push(runQuery(key, query));
       });
     } else if (change.key === change.query) {
-      // one shot doc
+      // one shot doc _id query
       batch.push(runQuery('docs', [change.query]));
     } else {
-      // one shot mango query
+      // one shot custom query
       batch.push(runQuery(change.key, change.query));
     }
 
     const processItem = async (input) => {
-      const item = await input;
-      const res = await item.res;
+      const { key, res } = await input;
 
-      if (res.docs) {
-        // mango query result
-        send({
-          commit: `${namespace}/setQueryResult`,
-          data: { key: item.key, data: res.docs },
-        });
-      } else {
-        // allDocs result
+      if (res.rows) {
+        // doc _id result
         res.rows.forEach(row => send({
           commit: `${namespace}/setQueryResult`,
           data: { key: row.id, data: row.doc },
         }));
+      } else {
+        // custom query result
+        send({
+          commit: `${namespace}/setQueryResult`,
+          data: { key, data: res },
+        });
       }
     };
 
@@ -217,7 +211,7 @@ async function handleChange(change, oneShot) {
 
 function register(query, key) {
   if (typeof query === 'string') {
-    // doc query
+    // simple doc _id query
     key = query; // eslint-disable-line no-param-reassign
 
     if (!queries.has('docs')) {
@@ -227,7 +221,7 @@ function register(query, key) {
       queries.set('docs', [...keys, key]);
     }
   } else {
-    // mango query
+    // custom query
     queries.set(key, query);
   }
 
@@ -330,10 +324,6 @@ function receive(event) {
     remove(data.remove.i, data.remove.opts[0]);
   } else if (data.waitUntil !== undefined) {
     waitUntil(data.waitUntil.i, data.waitUntil.opts[0], data.waitUntil.opts[1], data.waitUntil.opts[2]);
-  } else if (data.find !== undefined) {
-    find(data.find.i, data.find.opts[0]);
-  } else if (data.query !== undefined) {
-    dbQuery(data.query.i, data.query.opts[0], data.query.opts[1]);
   } else if (data.changes !== undefined) {
     changes(data.changes.i, data.changes.opts[0]);
   } else if (data.bulkDocs !== undefined) {

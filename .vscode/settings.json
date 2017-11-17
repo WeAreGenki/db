@@ -3,10 +3,13 @@
     "Builtins",
     "Firefox",
     "browserslist",
+    "endkey",
     "lifecycle",
     "mapreduce",
     "presets",
     "sourcemap",
+    "startkey",
+    "ufff",
     "upsert",
     "vuex",
     "websql"
