@@ -31,7 +31,7 @@ import SparkMD5 from 'spark-md5';
 // initialise PouchDB plugins
 if (process.env.NODE_ENV === 'test') {
   // in-memory database for testing
-  PouchDB.plugin(require('pouchdb-adapter-memory')); // eslint-disable-line global-require
+  PouchDB.plugin(require('pouchdb-adapter-memory')); // eslint-disable-line
 }
 PouchDB.plugin(AdapterIdb);
 PouchDB.plugin(AdapterHttp);
@@ -173,7 +173,8 @@ async function handleChange(change, oneShot) {
 
     if (!oneShot) {
       // TODO: Optimise which queries are run based on change.id (?)
-      // FIXME: Wait until initial sync is finished before running (to avoid running many times on first login)
+      // FIXME: Wait until initial sync is finished before running (to avoid
+      // running many times on first login)
       console.debug('CHANGE', change);
 
       queries.forEach((query, key) => {

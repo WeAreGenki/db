@@ -16,17 +16,9 @@ module.exports = {
   ],
   extends: [
     'airbnb-base',
-    'plugin:import/errors',
     'plugin:jest/recommended',
   ],
   rules: {
-    'import/extensions': ['error', 'always', {
-      js: 'never',
-    }],
-    // allow optionalDependencies
-    'import/no-extraneous-dependencies': ['error', {
-      optionalDependencies: ['test/unit/index.js']
-    }],
     // allow debugger during development
     'no-debugger': process.env.NODE_ENV === 'production' ? 2 : 0,
 
