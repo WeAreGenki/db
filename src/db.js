@@ -20,10 +20,13 @@
 
 // NOTE: Web worker communication sent as a JSON string for better performance
 
+// TODO: Logic to handle sync state in vuex OR remove this functionality
+
 // TODO: Use a SharedWorker so that there's only one worker shared between all tabs (minimise perf cost of db sync etc.)
 //  ↳ Will need to make sure message ID (sequence) is unique between all tabs
 //    ↳ Actually it may not be necessary, each tab will get a unique port (if I understand correctly...)
 //  ↳ https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker
+//  ↳ Need to test if this will slow things down when multiple tabs are trying to run db queries at the same time
 
 // TODO: Enable support for couchbase bulkDocs API
 //  ↳ REF: https://github.com/pouchdb/pouchdb/pull/6660
@@ -35,7 +38,7 @@ let sequence = 0;
 const resolves = new Map();
 const rejects = new Map();
 
-// Vue plugin install hook
+// vue plugin install hook
 function install(VueInstance) {
   // inject plugin into Vue instances as $db
   function inject() {
@@ -51,48 +54,61 @@ function install(VueInstance) {
 }
 
 class Database {
-  constructor({ Worker, local = 'PouchDB', remote, filter, vuexStore, indexes = [], queries = [], namespace = 'db', sync = true }) {
+  constructor({
+    Worker,
+    local = 'app',
+    remote,
+    filter,
+    vuexStore,
+    indexes = [],
+    queries = [],
+    namespace = 'db',
+    sync = true,
+    debug,
+  }) {
     this.vuexStore = vuexStore;
     this.namespace = namespace;
     this.worker = new Worker();
-    this.opts = { local, remote, filter, indexes, queries, namespace, sync };
+    this.opts = { local, remote, filter, indexes, queries, namespace, sync, debug };
     this._init();
   }
 
   _init() {
-    // Set up vuex store
+    // set up vuex store
     if (this.vuexStore !== undefined) {
       this.vuexStore.registerModule(this.namespace, {
         namespaced: true,
-        state: {
-          syncState: 'online', // online, offline, paused, error
-        },
+        // state: {
+        //   syncState: 'online', // online, offline, paused, error
+        // },
         mutations: {
           /* eslint-disable no-return-assign */
-          setSyncState: (state, syncState) => state.syncState = syncState,
+          // setSyncState: (state, syncState) => state.syncState = syncState,
           addQuery: (state, payload) => Vue.set(state, payload.key, {}),
           removeQuery: (state, payload) => Vue.delete(state, payload.key),
           setQueryResult: (state, payload) => state[payload.key] = payload.data,
           /* eslint-enable no-return-assign */
         },
-        actions: {
-          // use an action to change sync state to allow for custom functionality in future
-          changeSyncState({ commit }, newState) {
-            commit('setSyncState', newState);
-          },
-        },
+        // actions: {
+        //   // use an action to change sync state to allow for custom functionality in future
+        //   changeSyncState({ commit }, newState) {
+        //     commit('setSyncState', newState);
+        //   },
+        // },
       });
     }
 
-    // Send options to initialise PouchDB in dedicated web worker thread
+    // send options to initialise PouchDB in dedicated web worker thread
     this.worker.postMessage(JSON.stringify(this.opts));
 
-    // Handle web worker events
+    // handle web worker events
     this.worker.addEventListener('message', this._receive.bind(this));
     this.worker.addEventListener('error', (err) => { throw new Error(err); });
   }
 
-  // Standard PouchDB methods
+  /**
+   * Standard PouchDB methods
+   */
 
   get = docId => this._send('get', docId)
 
@@ -110,17 +126,15 @@ class Database {
 
   bulkDocs = (docs, opts) => this._send('bulkDocs', docs, opts)
 
-  bulkGet = opts => this._send('bulkGet', opts)
-
   revsDiff = diff => this._send('revsDiff', diff)
 
   changes = opts => this._send('changes', opts)
 
   compact = () => this._send('compact')
 
-  destroy = () => this._send('destroy')
-
-  // Additional methods
+  /**
+   * Additional methods
+   */
 
   /**
    * Wait until a doc is available in the local database
@@ -208,7 +222,7 @@ class Database {
     }
   }
 
-  // Outgoing message handler
+  // outgoing message handler
   _send(method, ...opts) {
     sequence += 1;
     const i = sequence;
@@ -221,7 +235,7 @@ class Database {
     });
   }
 
-  // Incoming message event handler
+  // incoming message event handler
   _receive(event) {
     const data = JSON.parse(event.data);
 

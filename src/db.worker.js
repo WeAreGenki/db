@@ -31,7 +31,7 @@ import Find from 'pouchdb-find';
 import { rev } from 'pouchdb-utils';
 import SparkMD5 from 'spark-md5';
 
-// Initialise PouchDB plugins
+// initialise PouchDB plugins
 if (process.env.NODE_ENV === 'test') {
   // in-memory database for testing
   PouchDB.plugin(require('pouchdb-adapter-memory')); // eslint-disable-line global-require
@@ -49,9 +49,7 @@ let queries = new Map();
 let namespace;
 
 function init(opts) {
-  // Uncomment for PouchDB debugging
-  // PouchDB.debug.enable('*'); // all logs
-  // PouchDB.debug.enable('pouchdb:find'); // debug find() query plans and indexing
+  if (opts.debug) PouchDB.debug.enable(opts.debug);
 
   localDB = new PouchDB(opts.local);
   remoteDB = opts.remote ? new PouchDB(opts.remote) : undefined;
@@ -59,15 +57,15 @@ function init(opts) {
   queries = new Map(opts.queries);
   namespace = opts.namespace; // eslint-disable-line prefer-destructuring
 
-  // Handle local database events
+  // handle local database events
   localDB.changes({ since: 'now', live: true })
     .on('change', change => handleChange(change))
     .on('error', (err) => { throw new Error(err); });
 
   if (opts.remote && opts.sync) {
-    // Populate local database; replicate from remote database
+    // populate local database; replicate from remote database
     localDB.replicate.from(remoteDB).on('complete', () => {
-      // Keep local and remote databases in sync
+      // keep local and remote databases in sync
       localDB.sync(remoteDB, {
         live: true,
         retry: true,
@@ -76,9 +74,7 @@ function init(opts) {
     });
   }
 
-  for (const index of opts.indexes) {
-    localDB.createIndex({ index });
-  }
+  opts.indexes.forEach(index => localDB.createIndex({ index }));
 
   if (queries.size) {
     handleChange({});
@@ -133,12 +129,6 @@ function bulkDocs(i, docs, opts) {
     .catch(err => send({ i, rej: err }));
 }
 
-function bulkGet(i, opts) {
-  localDB.bulkGet(opts)
-    .then(res => send({ i, res }))
-    .catch(err => send({ i, rej: err }));
-}
-
 function revsDiff(i, diff) {
   localDB.revsDiff(diff)
     .then(res => send({ i, res }))
@@ -158,12 +148,6 @@ function changes(i, opts) {
 
 function compact(i) {
   localDB.compact()
-    .then(res => send({ i, res }))
-    .catch(err => send({ i, rej: err }));
-}
-
-function destroy(i) {
-  localDB.destroy()
     .then(res => send({ i, res }))
     .catch(err => send({ i, rej: err }));
 }
@@ -197,9 +181,9 @@ async function handleChange(change, oneShot) {
       // FIXME: Wait until initial sync is finished before running (to avoid running many times on first login)
       console.debug('CHANGE', change);
 
-      for (const [key, query] of queries) {
+      queries.forEach((query, key) => {
         batch.push(runQuery(key, query));
-      }
+      });
     } else if (change.key === change.query) {
       // one shot doc
       batch.push(runQuery('docs', [change.query]));
@@ -208,18 +192,22 @@ async function handleChange(change, oneShot) {
       batch.push(runQuery(change.key, change.query));
     }
 
-    const processItem = async (item) => {
-      const newItem = await item;
-      const res = await newItem.res;
+    const processItem = async (input) => {
+      const item = await input;
+      const res = await item.res;
 
       if (res.docs) {
         // mango query result
-        send({ commit: `${namespace}/setQueryResult`, data: { key: newItem.key, data: res.docs }});
+        send({
+          commit: `${namespace}/setQueryResult`,
+          data: { key: item.key, data: res.docs },
+        });
       } else {
         // allDocs result
-        for (const row of res.rows) {
-          send({ commit: `${namespace}/setQueryResult`, data: { key: row.id, data: row.doc }});
-        }
+        res.rows.forEach(row => send({
+          commit: `${namespace}/setQueryResult`,
+          data: { key: row.id, data: row.doc },
+        }));
       }
     };
 
@@ -243,13 +231,10 @@ function register(query, key) {
     queries.set(key, query);
   }
 
-  // register new reactive vuex object
+  // register a new reactive vuex object
   send({ commit: `${namespace}/addQuery`, data: { key }});
 
-  // FIXME: REMOVE once done setting up indexes
-  // console.time('regQuery');
-
-  // run the query once to populate vuex object
+  // run the query once to populate the vuex object
   handleChange({ key, query }, true);
 }
 
@@ -289,7 +274,7 @@ function waitUntil(i, docId, newOnly, timeout) {
 
   // check existing docs
   if (!newOnly) {
-    const filterer = (doc) => {
+    const filterFun = (doc) => {
       docIds = docIds.filter(id => id !== doc._id);
 
       if (!docIds.length) {
@@ -298,11 +283,11 @@ function waitUntil(i, docId, newOnly, timeout) {
       }
     };
 
-    for (const docId2 of docIds) {
+    docIds.forEach((docId2) => {
       localDB.get(docId2)
-        .then(filterer)
+        .then(filterFun)
         .catch(() => {}); // no-op; keep looking in changes feed
-    }
+    });
   }
 
   // handle timeout
@@ -320,19 +305,21 @@ function md5(i, string) {
   send({ i, res: SparkMD5.hash(string) });
 }
 
-// Outgoing message handler
+// outgoing message handler
 function send(msg) {
   postMessage(JSON.stringify(msg));
 }
 
-// Incoming message event handler
+// incoming message event handler
 self.addEventListener('message', receive); // eslint-disable-line no-restricted-globals
 
-function receive(event) { // eslint-disable-line no-undef
+function receive(event) {
   const data = JSON.parse(event.data);
 
   if (data.get !== undefined) {
     get(data.get.i, data.get.opts[0]);
+  } else if (data.allDocs !== undefined) {
+    allDocs(data.allDocs.i, data.allDocs.opts[0]);
   } else if (data.put !== undefined) {
     put(data.put.i, data.put.opts[0]);
   } else if (data.register !== undefined) {
@@ -347,8 +334,6 @@ function receive(event) { // eslint-disable-line no-undef
     find(data.find.i, data.find.opts[0]);
   } else if (data.query !== undefined) {
     dbQuery(data.query.i, data.query.opts[0], data.query.opts[1]);
-  } else if (data.allDocs !== undefined) {
-    allDocs(data.allDocs.i, data.allDocs.opts[0]);
   } else if (data.changes !== undefined) {
     changes(data.changes.i, data.changes.opts[0]);
   } else if (data.bulkDocs !== undefined) {
@@ -365,10 +350,6 @@ function receive(event) { // eslint-disable-line no-undef
     revsDiff(data.revsDiff.i, data.revsDiff.opts[0]);
   } else if (data.post !== undefined) {
     post(data.post.i, data.post.opts[0]);
-  } else if (data.bulkGet !== undefined) {
-    bulkGet(data.bulkGet.i, data.bulkGet.opts[0]);
-  } else if (data.destroy !== undefined) {
-    destroy(data.destroy.i);
   } else {
     throw new Error('Unknown event:', event);
   }
