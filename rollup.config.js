@@ -11,11 +11,14 @@ export default [
       { file: pkg.main, format: 'cjs' },
       { file: pkg.module, format: 'es' },
     ],
+    sourcemap: true,
     plugins: [
       babel({
         exclude: ['node_modules/**'],
-        externalHelpers: true,
-        // plugins: ['@babel/external-helpers'],
+        // externalHelpers: true,
+        // externalHelpers: false,
+        // runtimeHelpers: true,
+        // runtimeHelpers: false,
       }),
     ],
   },
@@ -25,6 +28,7 @@ export default [
       { file: 'dist/db.worker.cjs.js', format: 'cjs' },
       { file: 'dist/db.worker.js', format: 'es' },
     ],
+    sourcemap: true,
     plugins: [
       resolve({
         browser: true,
@@ -33,9 +37,10 @@ export default [
       commonjs({ exclude: 'src/**' }),
       babel({
         exclude: ['node_modules/**'],
-        externalHelpers: false,
-        runtimeHelpers: true,
-        plugins: ['@babel/transform-runtime'],
+        // externalHelpers: true,
+        // externalHelpers: false,
+        // runtimeHelpers: true,
+        // runtimeHelpers: false,
       }),
     ],
   },

@@ -8,6 +8,8 @@
     }],
     "@babel/stage-2"
   ],
+  // "plugins": ["@babel/transform-runtime"],
+  // "plugins": ["@babel/external-helpers"],
   "env": {
     "test": {
       "presets": ["@babel/env", "@babel/stage-2"]
