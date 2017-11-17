@@ -64,7 +64,6 @@ class Database {
     remote,
     filter,
     vuexStore,
-    indexes = [],
     queries = [],
     namespace = 'db',
     sync = true,
@@ -93,18 +92,6 @@ class Database {
       enumerable: true,
       writable: true,
       value: doc => this._send('remove', doc)
-    });
-    Object.defineProperty(this, "find", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: req => this._send('find', req)
-    });
-    Object.defineProperty(this, "query", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: (doc, opts) => this._send('query', doc, opts)
     });
     Object.defineProperty(this, "allDocs", {
       configurable: true,
@@ -183,7 +170,6 @@ class Database {
       local,
       remote,
       filter,
-      indexes,
       queries,
       namespace,
       sync,
