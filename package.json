@@ -1,27 +1,24 @@
 {
   "name": "@wearegenki/db",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Vue + vuex plugin for reactive PouchDB in a web worker",
   "repository": "https://github.com/WeAreGenki/db",
   "author": "Max Milton <max@wearegenki.com>",
   "license": "Apache-2.0",
-  "main": "dist/db.cjs.js",
-  "module": "dist/db.js",
+  "main": "db.js",
   "files": [
-    "dist"
+    "db.js",
+    "db.worker.js"
   ],
   "scripts": {
-    "build": "NODE_ENV='production' rollup -c",
-    "dev": "NODE_ENV='development' rollup -c -w",
-    "test": "node test/test.js",
-    "pretest": "npm run build"
+    "test": "node test/test.js"
   },
   "peerDependencies": {
     "vue": "^2.5.3",
     "vuex": "^3.0.1"
   },
   "dependencies": {
-    "@babel/runtime": "^7.0.0-beta.32",
+    "lodash": "^4.17.4",
     "pouchdb-adapter-http": "^6.3.4",
     "pouchdb-adapter-idb": "^6.3.4",
     "pouchdb-core": "^6.3.4",
@@ -31,56 +28,29 @@
   },
   "devDependencies": {
     "@babel/core": "^7.0.0-beta.32",
+    "@babel/plugin-transform-modules-commonjs": "^7.0.0-beta.32",
+    "@babel/plugin-transform-runtime": "^7.0.0-beta.32",
     "@babel/preset-env": "^7.0.0-beta.32",
     "@babel/preset-stage-2": "^7.0.0-beta.32",
+    "@babel/register": "^7.0.0-beta.32",
+    "babel-core": "7.0.0-bridge.0",
     "babel-eslint": "^8.0.2",
-    "babel-jest": "^21.2.0",
+    "babel-jest": "^21.3.0-beta.8",
+    "babel-loader": "8.0.0-beta.0",
+    "babel-plugin-dynamic-import-node": "^1.2.0",
     "eslint": "^4.11.0",
     "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-import": "^2.8.0",
     "eslint-plugin-jest": "^21.3.2",
-    "jest": "^21.2.1",
+    "jest": "^21.3.0-beta.8",
+    "jest-serializer-vue": "^0.3.0",
     "pouchdb-adapter-memory": "^6.3.4",
-    "rollup": "^0.51.6",
-    "rollup-plugin-babel": "^4.0.0-beta.0",
-    "rollup-plugin-commonjs": "^8.2.6",
-    "rollup-plugin-node-resolve": "^3.0.0"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json"
-    ],
-    "transform": {
-      "^.+\\.js$": "<rootDir>/node_modules/babel-jest"
-    },
-    "setupFiles": [
-      "<rootDir>/test/unit/setup"
-    ],
-    "mapCoverage": true,
-    "collectCoverageFrom": [
-      "src/**/*.js",
-      "!**/node_modules/**"
-    ]
+    "vue-jest": "^1.1.0",
+    "vue-template-compiler": "^2.5.8",
+    "vue-test-utils": "1.0.0-beta.6"
   },
   "engines": {
     "node": ">= 8.0.0",
     "npm": ">= 3.10.0"
-  },
-  "browserslist": {
-    "production": [
-      "> 1% in AU",
-      "> 1% in JP",
-      "last 2 Chrome versions",
-      "last 2 Firefox versions",
-      "last 2 ChromeAndroid versions",
-      "last 2 Edge versions",
-      "last 2 iOS versions",
-      "last 2 Safari versions",
-      "not Explorer <= 11",
-      "not ExplorerMobile <= 11"
-    ],
-    "development": [
-      "last 1 Chrome version"
-    ]
   }
 }

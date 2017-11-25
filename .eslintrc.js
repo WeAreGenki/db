@@ -9,33 +9,23 @@ module.exports = {
   },
   env: {
     browser: true,
+    es6: true,
+    worker: true,
+    jest: true,
     'jest/globals': true
   },
   plugins: [
     'jest',
+    'import',
   ],
   extends: [
     'airbnb-base',
+    'plugin:import/errors',
     'plugin:jest/recommended',
   ],
   rules: {
-    // allow debugger during development
-    'no-debugger': process.env.NODE_ENV === 'production' ? 2 : 0,
-
-    // We Are Genki
-    'no-param-reassign': ['error', { props: false }],
-    'no-underscore-dangle': 'off', // needed for PouchDB
-    'no-use-before-define': 'off', // FIXME: Currently broken with destructuring
-    'max-len': ['error', {
-      code: 120,
-      tabWidth: 2,
-      ignoreComments: true,
-      ignoreTrailingComments: true,
-      ignoreUrls: true,
-      ignoreStrings: true,
-      ignoreTemplateLiterals: true,
-    }],
+    'import/extensions': ['error', 'always', { js: 'never' }],
+    'no-underscore-dangle': 'off',
     'object-curly-spacing': ['error', 'always', { objectsInObjects: false }],
-    'object-curly-newline': ['error', { consistent: true }],
   }
 };

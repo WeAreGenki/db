@@ -1,8 +1,7 @@
-import Vue from 'vue';
-
 /**
  * @wearegenki/db
  * Vue + vuex plugin for reactive PouchDB (in a web worker)
+ *
  * @author: Max Milton <max@wearegenki.com>
  *
  * Copyright 2017 We Are Genki
@@ -19,41 +18,44 @@ import Vue from 'vue';
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 // NOTE: Web worker communication sent as a JSON string for better performance
+
 // TODO: Logic to handle sync state in vuex OR remove this functionality
+
 // TODO: Use a SharedWorker so that there's only one worker shared between all
-// tabs (minimise perf cost of db sync etc.)
+// tabs (minimise network performance cost of db sync etc.)
 //  ↳ Will need to make sure message ID (sequence) is unique between all tabs
 //    ↳ Actually it may not be necessary, each tab will get a unique port (if
 //      I understand correctly...)
 //  ↳ https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker
 //  ↳ Need to test if this will slow things down when multiple tabs are trying
-//    to run db queries at the same time
+//    to run db queries at the same time -- could we have one syncing worker and
+//    multiple query workers?
+
 // TODO: Enable support for couchbase bulkDocs API
 //  ↳ REF: https://github.com/pouchdb/pouchdb/pull/6660
-let sequence = 0; // use Map for better performance (in Chrome, other browsers too as they optimise Map)
 
+import Vue from 'vue'; // eslint-disable-line
+
+let sequence = 0;
+// use Map for better performance (in Chrome, other browsers too as they optimise Map)
 const resolves = new Map();
-const rejects = new Map(); // vue plugin install hook
+const rejects = new Map();
 
+// vue plugin install hook
 function install(VueInstance) {
   // inject plugin into Vue instances as $db
   function inject() {
     const options = this.$options;
-
     if (options.db) {
       this.$db = options.db;
     } else if (options.parent && options.parent.$db) {
       this.$db = options.parent.$db;
     }
   }
-
   const usesInit = VueInstance.config._lifecycleHooks.indexOf('init') > -1;
-  VueInstance.mixin(usesInit ? {
-    init: inject
-  } : {
-    beforeCreate: inject
-  });
+  VueInstance.mixin(usesInit ? { init: inject } : { beforeCreate: inject });
 }
 
 class Database {
@@ -65,103 +67,13 @@ class Database {
     vuexStore,
     queries = [],
     namespace = 'db',
+    createRemote = false, // assume remote db already exists
     sync = true,
-    debug
+    debounce = 300, // ms
+    pushCp = 'source', // less net traffic for better performance -- REF: https://git.io/vFAI6
+    pullCp = 'target',
+    debug,
   }) {
-    Object.defineProperty(this, "get", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: docId => this._send('get', docId)
-    });
-    Object.defineProperty(this, "put", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: doc => this._send('put', doc)
-    });
-    Object.defineProperty(this, "post", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: doc => this._send('post', doc)
-    });
-    Object.defineProperty(this, "remove", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: doc => this._send('remove', doc)
-    });
-    Object.defineProperty(this, "allDocs", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: docs => this._send('allDocs', docs)
-    });
-    Object.defineProperty(this, "bulkDocs", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: (docs, opts) => this._send('bulkDocs', docs, opts)
-    });
-    Object.defineProperty(this, "revsDiff", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: diff => this._send('revsDiff', diff)
-    });
-    Object.defineProperty(this, "changes", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: opts => this._send('changes', opts)
-    });
-    Object.defineProperty(this, "compact", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: () => this._send('compact')
-    });
-    Object.defineProperty(this, "waitUntil", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: (docId, newOnly, timeout = 45e3) => this._send('waitUntil', docId, newOnly, timeout)
-    });
-    Object.defineProperty(this, "register", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: (query, key) => this.worker.postMessage(JSON.stringify({
-        register: {
-          query,
-          key
-        }
-      }))
-    });
-    Object.defineProperty(this, "unregister", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: (key, isDoc) => this.worker.postMessage(JSON.stringify({
-        unregister: {
-          key,
-          isDoc
-        }
-      }))
-    });
-    Object.defineProperty(this, "rev", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: () => this._send('rev')
-    });
-    Object.defineProperty(this, "md5", {
-      configurable: true,
-      enumerable: true,
-      writable: true,
-      value: string => this._send('md5', string)
-    });
     this.vuexStore = vuexStore;
     this.namespace = namespace;
     this.worker = new Worker();
@@ -171,10 +83,13 @@ class Database {
       filter,
       queries,
       namespace,
+      createRemote,
       sync,
-      debug
+      debounce,
+      pullCp,
+      pushCp,
+      debug,
     };
-
     this._init();
   }
 
@@ -187,48 +102,105 @@ class Database {
         //   syncState: 'online', // online, offline, paused, error
         // },
         mutations: {
-          /* eslint-disable no-return-assign */
+          /* eslint-disable no-return-assign, no-param-reassign */
           // setSyncState: (state, syncState) => state.syncState = syncState,
           addQuery: (state, payload) => Vue.set(state, payload.key, {}),
           removeQuery: (state, payload) => Vue.delete(state, payload.key),
-          setQueryResult: (state, payload) => state[payload.key] = payload.data
-          /* eslint-enable no-return-assign */
-
-        } // actions: {
+          setQueryResult: (state, payload) => state[payload.key] = payload.data,
+          /* eslint-enable no-return-assign, no-param-reassign */
+        },
+        // actions: {
         //   // use an action to change sync state to allow for custom functionality in future
         //   changeSyncState({ commit }, newState) {
         //     commit('setSyncState', newState);
         //   },
         // },
-
       });
-    } // send options to initialise PouchDB in dedicated web worker thread
+    }
 
+    // send options to initialise PouchDB in dedicated web worker thread
+    // this.worker.postMessage(JSON.stringify(this.opts));
+    this._post('init', this.opts);
 
-    this.worker.postMessage(JSON.stringify(this.opts)); // handle web worker events
-
+    // handle web worker events
     this.worker.addEventListener('message', this._receive.bind(this));
-    this.worker.addEventListener('error', err => {
-      throw new Error(err);
-    });
+    this.worker.addEventListener('error', (err) => { throw new Error(err); });
   }
+
   /**
    * Standard PouchDB methods
    */
 
+  get = _id => this._send('get', _id)
+
+  put = doc => this._send('put', doc)
+
+  post = doc => this._send('post', doc)
+
+  remove = doc => this._send('remove', doc)
+
+  allDocs = docs => this._send('allDocs', docs)
+
+  bulkDocs = (docs, opts) => this._send('bulkDocs', docs, opts)
+
+  revsDiff = diff => this._send('revsDiff', diff)
+
+  changes = opts => this._send('changes', opts)
+
+  compact = () => this._post('compact')
 
   /**
-   * Insert doc if new or update doc if it exists
-   * (based on the PouchDB upsert plugin)
+   * Additional methods
+   */
+
+  /**
+   * Wait until a doc is available in the local database
+   *
+   * @param {(string|Array.<string>)} _id - The doc _id or array of _ids to wait for
+   * @param {Boolean} [newOnly] - Don't check in existing docs; only react to incoming doc changes
+   * @param {number} [timeout] - How long to wait before giving up in milliseconds (default = 45s)
+   * @returns {Promise} - Containing the _id
+   */
+  waitFor = (_id, newOnly, timeout = 45e3) => this._send('waitFor', _id, newOnly, timeout)
+
+  /**
+   * Register a new reactive database query (keep the number of registered queries to a minimum!)
+   *
+   * @param {(Object|string)} query - Query object or doc _id string to watch for changes
+   * @param {string} [key] - Name of the vuex object key (for queries, otherwise doc _id)
+   */
+  register = (query, key) => this._post('register', query, key)
+
+  /**
+   * Unregister a previously registered reactive query
+   *
+   * @param {(string|number)} key - The returned key generated by register()
+   * @param {Boolean} [isDoc] - Specific if the query is a doc as we can't infer it like
+   */
+  unregister = (key, isDoc) => this._post('unregister', key, isDoc)
+
+  /**
+   * Query database and filter + sort the results
+   *
+   * @param {string} type - x
+   * @param {{field: string, value: string}} [filter] - x
+   * @param {string} [sort] - x
+   * @returns {Promise} - Containing the query results
+   */
+  query = ({ type, filter, sort }) => this._send('query', { type, filter, sort })
+
+  /**
+   * Insert doc if new or update doc if it exists (based on the PouchDB upsert plugin)
+   *
    * @see https://github.com/pouchdb/upsert/blob/master/index.js
-   * @param {string} docId - _id of the doc to edit
+   * @param {string} _id - _id of the doc to edit
    * @param {Function} diffFun - A function returning the changes requested
    */
-  async upsert(docId, diffFun) {
+  async upsert(_id, diffFun) {
     let doc;
 
     try {
-      doc = await this.get(docId);
+      doc = await this.get(_id);
     } catch (err) {
       if (err.status !== 404) throw err;
       doc = {};
@@ -241,15 +213,11 @@ class Database {
 
       if (!newDoc) {
         // if the diffFun returns falsy, we short-circuit as an optimization
-        return {
-          updated: false,
-          rev: docRev,
-          id: docId
-        };
-      } // users aren't allowed to modify these values, so reset them here
+        return { updated: false, rev: docRev, id: _id };
+      }
 
-
-      newDoc._id = docId;
+      // users aren't allowed to modify these values, so reset them here
+      newDoc._id = _id;
       newDoc._rev = docRev;
       return this._tryPut(newDoc, diffFun);
     } catch (err) {
@@ -257,37 +225,55 @@ class Database {
     }
   }
 
+  // part of upsert
   async _tryPut(doc, diffFun) {
     try {
       const res = await this.put(doc);
       return {
         updated: true,
         rev: res.rev,
-        id: doc._id
+        id: doc._id,
       };
     } catch (err) {
       if (err.status !== 409) throw err;
       return this.upsert(doc._id, diffFun);
     }
-  } // outgoing message handler
+  }
 
+  /**
+   * Generate a doc revision ID
+   *
+   * @returns {Promise} - The doc revision ID string
+   */
+  rev = () => this._send('rev')
 
+  /**
+   * Get an MD5 hash
+   *
+   * @param {string} string - The input you want hashed
+   * @returns {Promise} - Resulting MD5 hash
+   */
+  md5 = string => this._send('md5', string)
+
+  // outgoing message handler (with return value)
   _send(method, ...opts) {
     sequence += 1;
     const i = sequence;
+
     return new Promise((resolve, reject) => {
       resolves.set(i, resolve);
       rejects.set(i, reject);
-      this.worker.postMessage(JSON.stringify({
-        [method]: {
-          i,
-          opts
-        }
-      }));
+
+      this.worker.postMessage(JSON.stringify({ [method]: { i, opts }}));
     });
-  } // incoming message event handler
+  }
 
+  // send one way message
+  _post(method, ...opts) {
+    this.worker.postMessage(JSON.stringify({ [method]: { ...opts }}));
+  }
 
+  // incoming message event handler
   _receive(event) {
     const data = JSON.parse(event.data);
 
@@ -297,9 +283,9 @@ class Database {
         resolves.get(data.i)(data.res);
       } else if (rejects.has(data.i)) {
         rejects.get(data.i)(data.rej);
-      } // clean up promise handlers
+      }
 
-
+      // clean up promise handlers
       resolves.delete(data.i);
       rejects.delete(data.i);
     } else if (data.commit !== undefined) {
@@ -309,13 +295,21 @@ class Database {
       throw new Error('Unknown event:', event);
     }
   }
-
 }
 
-var db = {
-  install,
-  Database
-};
+if (process.env.NODE_ENV !== 'production') {
+  /**
+   * Execute arbitrary code in web worker for development or testing
+   *
+   * @param {string} code - Code to be run in eval(), will await any returned promise
+   * @returns {} - No return value but does call console.log in the worker
+   */
+  Database.prototype.exec = function exec(code) {
+    this.worker.postMessage(JSON.stringify({ exec: code }));
+  };
+}
 
-export default db;
-//# sourceMappingURL=db.js.map
+export default {
+  install,
+  Database,
+};

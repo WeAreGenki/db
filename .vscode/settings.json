@@ -9,6 +9,8 @@
     "presets",
     "sourcemap",
     "startkey",
+    "transpilation",
+    "transpiled",
     "ufff",
     "upsert",
     "vuex",

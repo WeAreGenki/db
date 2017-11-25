@@ -1,6 +1,7 @@
 /**
  * @wearegenki/db (web worker)
  * Vue + vuex plugin for reactive PouchDB (in a web worker)
+ *
  * @author: Max Milton <max@wearegenki.com>
  *
  * Copyright 2017 We Are Genki
@@ -25,6 +26,7 @@ import PouchDB from 'pouchdb-core';
 import AdapterIdb from 'pouchdb-adapter-idb';
 import AdapterHttp from 'pouchdb-adapter-http';
 import Replication from 'pouchdb-replication';
+import debounce from 'lodash/debounce';
 import { rev } from 'pouchdb-utils';
 import SparkMD5 from 'spark-md5';
 
@@ -42,28 +44,110 @@ let remoteDB;
 let queries = new Map();
 let namespace;
 
+// outgoing message handler
+function send(msg) {
+  postMessage(JSON.stringify(msg));
+}
+
+async function runQuery(key, query) {
+  let res;
+
+  if (key === 'docs') {
+    // simple list of doc _ids
+    res = await localDB.allDocs({
+      include_docs: true,
+      keys: query,
+    });
+  } else {
+    // type query with filter and sort
+    let { rows } = await localDB.allDocs({
+      include_docs: true,
+      startkey: query.type,
+      endkey: `${query.type}\ufff0`,
+    });
+
+    if (query.filter !== undefined) {
+      rows = rows.filter(row => row.doc[query.filter.field] === query.filter.value);
+    }
+
+    // clean up results so we just have an array of docs
+    res = rows.map(row => row.doc);
+
+    if (query.sort !== undefined) {
+      res = res.sort((a, b) => a[query.sort].localeCompare(b[query.sort]));
+    }
+  }
+  return { key, res };
+}
+
+async function handleChange(change, oneShot) {
+  if (queries.size) {
+    const batch = [];
+
+    if (!oneShot) {
+      queries.forEach((query, key) => {
+        batch.push(runQuery(key, query));
+      });
+    } else if (change.key === change.query) {
+      // one shot doc _id query
+      batch.push(runQuery('docs', [change.query]));
+    } else {
+      // one shot custom query
+      batch.push(runQuery(change.key, change.query));
+    }
+
+    const processItem = async (input) => {
+      const { key, res } = await input;
+
+      if (res.rows) {
+        // doc _id result
+        res.rows.forEach(row => send({
+          commit: `${namespace}/setQueryResult`,
+          data: { key: row.id, data: row.doc },
+        }));
+      } else {
+        // custom query result
+        send({
+          commit: `${namespace}/setQueryResult`,
+          data: { key, data: res },
+        });
+      }
+    };
+
+    batch.map(processItem);
+  }
+}
+
 function init(opts) {
   if (opts.debug) PouchDB.debug.enable(opts.debug);
 
   localDB = new PouchDB(opts.local);
-  remoteDB = opts.remote ? new PouchDB(opts.remote) : undefined;
+  remoteDB = opts.remote
+    ? new PouchDB(opts.remote, { skip_setup: !opts.createRemote })
+    : undefined;
 
   queries = new Map(opts.queries);
   namespace = opts.namespace; // eslint-disable-line prefer-destructuring
 
   // handle local database events
   localDB.changes({ since: 'now', live: true })
-    .on('change', change => handleChange(change))
+    .on('change', debounce(handleChange, opts.debounce))
     .on('error', (err) => { throw new Error(err); });
 
-  if (opts.remote && opts.sync) {
+  if (opts.remote !== undefined && opts.sync) {
     // populate local database; replicate from remote database
-    localDB.replicate.from(remoteDB).on('complete', () => {
+    PouchDB.replicate(localDB, remoteDB, { checkpoint: opts.pushCp }).on('complete', () => {
       // keep local and remote databases in sync
-      localDB.sync(remoteDB, {
+      PouchDB.sync(localDB, remoteDB, {
         live: true,
         retry: true,
         filter: opts.filter,
+        push: {
+          checkpoint: opts.pushCp,
+        },
+        pull: {
+          checkpoint: opts.pullCp,
+        },
       });
     });
   }
@@ -81,12 +165,6 @@ function get(i, docId) {
 
 function put(i, doc) {
   localDB.put(doc)
-    .then(res => send({ i, res }))
-    .catch(err => send({ i, rej: err }));
-}
-
-function post(i, doc) {
-  localDB.post(doc)
     .then(res => send({ i, res }))
     .catch(err => send({ i, rej: err }));
 }
@@ -132,84 +210,6 @@ function compact(i) {
     .catch(err => send({ i, rej: err }));
 }
 
-async function runQuery(key, query) {
-  try {
-    let res;
-
-    if (key === 'docs') {
-      // simple list of doc _ids
-      res = await localDB.allDocs({
-        include_docs: true,
-        keys: query,
-      });
-    } else {
-      // type query with filter and sort
-      let { rows } = await localDB.allDocs({
-        include_docs: true,
-        startkey: query.type,
-        endkey: `${query.type}\ufff0`,
-      });
-
-      if (query.filter !== undefined) {
-        rows = rows.filter(row => row.doc[query.filter.field] === query.filter.value);
-      }
-
-      // clean up results so we just have an array of docs
-      res = rows.map(row => row.doc);
-
-      if (query.sort !== undefined) {
-        res = res.sort((a, b) => a[query.sort].localeCompare(b[query.sort]));
-      }
-    }
-    return { key, res };
-  } catch (err) {
-    throw err;
-  }
-}
-
-async function handleChange(change, oneShot) {
-  if (queries.size) {
-    const batch = [];
-
-    if (!oneShot) {
-      // TODO: Optimise which queries are run based on change.id (?)
-      // FIXME: Wait until initial sync is finished before running (to avoid
-      // running many times on first login)
-      console.debug('CHANGE', change);
-
-      queries.forEach((query, key) => {
-        batch.push(runQuery(key, query));
-      });
-    } else if (change.key === change.query) {
-      // one shot doc _id query
-      batch.push(runQuery('docs', [change.query]));
-    } else {
-      // one shot custom query
-      batch.push(runQuery(change.key, change.query));
-    }
-
-    const processItem = async (input) => {
-      const { key, res } = await input;
-
-      if (res.rows) {
-        // doc _id result
-        res.rows.forEach(row => send({
-          commit: `${namespace}/setQueryResult`,
-          data: { key: row.id, data: row.doc },
-        }));
-      } else {
-        // custom query result
-        send({
-          commit: `${namespace}/setQueryResult`,
-          data: { key, data: res },
-        });
-      }
-    };
-
-    batch.map(processItem);
-  }
-}
-
 function register(query, key) {
   if (typeof query === 'string') {
     // simple doc _id query
@@ -243,7 +243,7 @@ function unregister(key, isDoc) {
   send({ commit: `${namespace}/removeQuery`, data: { key }});
 }
 
-function waitUntil(i, docId, newOnly, timeout) {
+function waitFor(i, docId, newOnly, timeout) {
   let docIds;
   if (typeof docId === 'string') {
     docIds = [docId];
@@ -292,6 +292,11 @@ function waitUntil(i, docId, newOnly, timeout) {
   }, timeout);
 }
 
+async function dbQuery(i, { type, filter, sort }) {
+  const { res } = await runQuery(null, { type, filter, sort });
+  send({ i, res });
+}
+
 function dbRev(i) {
   send({ i, res: rev() });
 }
@@ -300,48 +305,55 @@ function md5(i, string) {
   send({ i, res: SparkMD5.hash(string) });
 }
 
-// outgoing message handler
-function send(msg) {
-  postMessage(JSON.stringify(msg));
-}
-
-// incoming message event handler
-self.addEventListener('message', receive); // eslint-disable-line no-restricted-globals
-
 function receive(event) {
   const data = JSON.parse(event.data);
+
+  console.log('DATA', data, ...data);
+
+  if (process.env.NODE_ENV !== 'production') {
+    // execute arbitrary code for development or testing
+    if (data.exec !== undefined) {
+      (async () => {
+        console.log('%c[EXEC]', 'color: #fff; background: red;', await eval(data.exec)); // eslint-disable-line
+      })();
+      return;
+    }
+  }
 
   if (data.get !== undefined) {
     get(data.get.i, data.get.opts[0]);
   } else if (data.allDocs !== undefined) {
     allDocs(data.allDocs.i, data.allDocs.opts[0]);
-  } else if (data.put !== undefined) {
-    put(data.put.i, data.put.opts[0]);
   } else if (data.register !== undefined) {
     register(data.register.query, data.register.key);
   } else if (data.unregister !== undefined) {
     unregister(data.unregister.key, data.unregister.isDoc);
+  } else if (data.query !== undefined) {
+    dbQuery(data.query.i, data.query.opts[0]);
+  } else if (data.waitFor !== undefined) {
+    waitFor(data.waitFor.i, data.waitFor.opts[0], data.waitFor.opts[1], data.waitFor.opts[2]);
+  } else if (data.put !== undefined) {
+    put(data.put.i, data.put.opts[0]);
   } else if (data.remove !== undefined) {
     remove(data.remove.i, data.remove.opts[0]);
-  } else if (data.waitUntil !== undefined) {
-    waitUntil(data.waitUntil.i, data.waitUntil.opts[0], data.waitUntil.opts[1], data.waitUntil.opts[2]);
-  } else if (data.changes !== undefined) {
-    changes(data.changes.i, data.changes.opts[0]);
   } else if (data.bulkDocs !== undefined) {
     bulkDocs(data.bulkDocs.i, data.bulkDocs.opts[0], data.bulkDocs.opts[1]);
-  } else if (data.local !== undefined) {
-    init(data);
   } else if (data.rev !== undefined) {
     dbRev(data.rev.i);
   } else if (data.md5 !== undefined) {
     md5(data.md5.i, data.md5.opts[0]);
-  } else if (data.compact !== undefined) {
-    compact(data.compact.i);
   } else if (data.revsDiff !== undefined) {
     revsDiff(data.revsDiff.i, data.revsDiff.opts[0]);
-  } else if (data.post !== undefined) {
-    post(data.post.i, data.post.opts[0]);
+  } else if (data.compact !== undefined) {
+    compact(data.compact.i);
+  } else if (data.changes !== undefined) {
+    changes(data.changes.i, data.changes.opts[0]);
+  } else if (data.init !== undefined) {
+    init(data.init);
   } else {
     throw new Error('Unknown event:', event);
   }
 }
+
+// incoming message event handler
+self.addEventListener('message', receive); // eslint-disable-line no-restricted-globals
