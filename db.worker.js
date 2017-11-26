@@ -19,15 +19,14 @@
  * limitations under the License.
  */
 
-// NOTE: The `i` var is the message sequence id used to keep track of which
-//  method the message originated from.
+/* eslint-env worker */
 
 import PouchDB from 'pouchdb-core';
 import AdapterIdb from 'pouchdb-adapter-idb';
 import AdapterHttp from 'pouchdb-adapter-http';
 import Replication from 'pouchdb-replication';
 import debounce from 'lodash/debounce';
-import { rev } from 'pouchdb-utils';
+import { rev as getRev } from 'pouchdb-utils';
 import SparkMD5 from 'spark-md5';
 
 // initialise PouchDB plugins
@@ -39,6 +38,7 @@ PouchDB.plugin(AdapterIdb);
 PouchDB.plugin(AdapterHttp);
 PouchDB.plugin(Replication);
 
+let config;
 let localDB;
 let remoteDB;
 let queries = new Map();
@@ -46,7 +46,7 @@ let namespace;
 
 // outgoing message handler
 function send(msg) {
-  postMessage(JSON.stringify(msg));
+  self.postMessage(JSON.stringify(msg)); // eslint-disable-line no-restricted-globals
 }
 
 async function runQuery(key, query) {
@@ -60,27 +60,42 @@ async function runQuery(key, query) {
     });
   } else {
     // type query with filter and sort
+    // XXX: t = type, f = filter, s = sort, l = limit, b = start
+    const { t, f, s, l, b } = query;
+
     let { rows } = await localDB.allDocs({
       include_docs: true,
-      startkey: query.type,
-      endkey: `${query.type}\ufff0`,
+      startkey: b || t,
+      endkey: `${t}\ufff0`,
+      limit: l,
     });
 
-    if (query.filter !== undefined) {
-      rows = rows.filter(row => row.doc[query.filter.field] === query.filter.value);
+    if (f !== undefined) {
+      // TODO: Optimise for file size
+      if (f.when === undefined) {
+        rows = rows.filter(row => row.doc[f.for] === f.if);
+      } else if (f.when === '<=') {
+        rows = rows.filter(row => row.doc[f.for] <= f.if);
+      } else if (f.when === '>=') {
+        rows = rows.filter(row => row.doc[f.for] >= f.if);
+      } else if (f.when === '<') {
+        rows = rows.filter(row => row.doc[f.for] < f.if);
+      } else if (f.when === '>') {
+        rows = rows.filter(row => row.doc[f.for] > f.if);
+      }
     }
 
     // clean up results so we just have an array of docs
     res = rows.map(row => row.doc);
 
-    if (query.sort !== undefined) {
-      res = res.sort((a, b) => a[query.sort].localeCompare(b[query.sort]));
+    if (s !== undefined) {
+      res = res.sort((x, y) => x[s].localeCompare(y[s]));
     }
   }
   return { key, res };
 }
 
-async function handleChange(change, oneShot) {
+async function handleChange(change = {}, oneShot) {
   if (queries.size) {
     const batch = [];
 
@@ -102,14 +117,14 @@ async function handleChange(change, oneShot) {
       if (res.rows) {
         // doc _id result
         res.rows.forEach(row => send({
-          commit: `${namespace}/setQueryResult`,
-          data: { key: row.id, data: row.doc },
+          c: `${namespace}/setQueryResult`,
+          d: { key: row.id, data: row.doc },
         }));
       } else {
         // custom query result
         send({
-          commit: `${namespace}/setQueryResult`,
-          data: { key, data: res },
+          c: `${namespace}/setQueryResult`,
+          d: { key, data: res },
         });
       }
     };
@@ -119,7 +134,9 @@ async function handleChange(change, oneShot) {
 }
 
 function init(opts) {
-  if (opts.debug) PouchDB.debug.enable(opts.debug);
+  config = opts; // used in sync()
+
+  if (opts.debug !== undefined) PouchDB.debug.enable(opts.debug);
 
   localDB = new PouchDB(opts.local);
   remoteDB = opts.remote
@@ -135,8 +152,11 @@ function init(opts) {
     .on('error', (err) => { throw new Error(err); });
 
   if (opts.remote !== undefined && opts.sync) {
-    // populate local database; replicate from remote database
-    PouchDB.replicate(localDB, remoteDB, { checkpoint: opts.pushCp }).on('complete', () => {
+    // populate local database; pull docs from remote database
+    PouchDB.replicate(remoteDB, localDB, { checkpoint: opts.pullCp }).on('complete', (info) => {
+      // update main thread that initial replication is fished
+      send({ r: 1, res: info });
+
       // keep local and remote databases in sync
       PouchDB.sync(localDB, remoteDB, {
         live: true,
@@ -153,44 +173,44 @@ function init(opts) {
   }
 
   if (queries.size) {
-    handleChange({});
+    handleChange();
   }
 }
 
 function get(i, docId) {
   localDB.get(docId)
     .then(doc => send({ i, res: doc }))
-    .catch(err => send({ i, rej: err }));
+    .catch(rej => send({ i, rej }));
 }
 
 function put(i, doc) {
   localDB.put(doc)
     .then(res => send({ i, res }))
-    .catch(err => send({ i, rej: err }));
+    .catch(rej => send({ i, rej }));
 }
 
 function remove(i, doc) {
   localDB.remove(doc)
     .then(res => send({ i, res }))
-    .catch(err => send({ i, rej: err }));
+    .catch(rej => send({ i, rej }));
 }
 
-function allDocs(i, opts) {
+function all(i, opts) {
   localDB.allDocs(opts)
     .then(res => send({ i, res }))
-    .catch(err => send({ i, rej: err }));
+    .catch(rej => send({ i, rej }));
 }
 
-function bulkDocs(i, docs, opts) {
+function bulk(i, docs, opts) {
   localDB.bulkDocs(docs, opts)
     .then(res => send({ i, res }))
-    .catch(err => send({ i, rej: err }));
+    .catch(rej => send({ i, rej }));
 }
 
-function revsDiff(i, diff) {
-  localDB.revsDiff(diff)
+function diff(i, ids) {
+  localDB.revsDiff(ids)
     .then(res => send({ i, res }))
-    .catch(err => send({ i, rej: err }));
+    .catch(rej => send({ i, rej }));
 }
 
 function changes(i, opts) {
@@ -201,13 +221,13 @@ function changes(i, opts) {
 
   localDB.changes(opts)
     .then(res => send({ i, res }))
-    .catch(err => send({ i, rej: err }));
+    .catch(rej => send({ i, rej }));
 }
 
 function compact(i) {
   localDB.compact()
     .then(res => send({ i, res }))
-    .catch(err => send({ i, rej: err }));
+    .catch(rej => send({ i, rej }));
 }
 
 function register(query, key) {
@@ -227,7 +247,7 @@ function register(query, key) {
   }
 
   // register a new reactive vuex object
-  send({ commit: `${namespace}/addQuery`, data: { key }});
+  send({ c: `${namespace}/addQuery`, d: { key }});
 
   // run the query once to populate the vuex object
   handleChange({ key, query }, true);
@@ -240,17 +260,13 @@ function unregister(key, isDoc) {
     const docs = queries.get('docs');
     queries.set('docs', docs.filter(doc => doc !== key));
   }
-  send({ commit: `${namespace}/removeQuery`, data: { key }});
+  send({ c: `${namespace}/removeQuery`, d: { key }});
 }
 
 function waitFor(i, docId, newOnly, timeout) {
-  let docIds;
-  if (typeof docId === 'string') {
-    docIds = [docId];
-  } else {
-    // clone the array
-    docIds = docId.slice(0);
-  }
+  let docIds = typeof docId === 'string'
+    ? [docId]
+    : docId.slice(0); // clone array
 
   // listen to database changes feed
   const listener = localDB.changes({ since: 'now', live: true })
@@ -297,8 +313,23 @@ async function dbQuery(i, { type, filter, sort }) {
   send({ i, res });
 }
 
-function dbRev(i) {
-  send({ i, res: rev() });
+function sync(i, retry) {
+  PouchDB.sync(localDB, remoteDB, {
+    retry,
+    filter: config.filter,
+    push: {
+      checkpoint: config.pushCp,
+    },
+    pull: {
+      checkpoint: config.pullCp,
+    },
+  })
+    .on('complete', res => send({ i, res }))
+    .on('error', rej => send({ i, rej }));
+}
+
+function rev(i) {
+  send({ i, res: getRev() });
 }
 
 function md5(i, string) {
@@ -306,52 +337,37 @@ function md5(i, string) {
 }
 
 function receive(event) {
-  const data = JSON.parse(event.data);
-
-  console.log('DATA', data, ...data);
+  // XXX: m = method, i = sequence number, o = options
+  const { m, i, o } = JSON.parse(event.data);
 
   if (process.env.NODE_ENV !== 'production') {
     // execute arbitrary code for development or testing
-    if (data.exec !== undefined) {
+    if (m === 'exec') {
       (async () => {
-        console.log('%c[EXEC]', 'color: #fff; background: red;', await eval(data.exec)); // eslint-disable-line
+        console.log('%c[EXEC]', 'color: #fff; background: red;', await eval(o)); // eslint-disable-line
       })();
       return;
     }
   }
 
-  if (data.get !== undefined) {
-    get(data.get.i, data.get.opts[0]);
-  } else if (data.allDocs !== undefined) {
-    allDocs(data.allDocs.i, data.allDocs.opts[0]);
-  } else if (data.register !== undefined) {
-    register(data.register.query, data.register.key);
-  } else if (data.unregister !== undefined) {
-    unregister(data.unregister.key, data.unregister.isDoc);
-  } else if (data.query !== undefined) {
-    dbQuery(data.query.i, data.query.opts[0]);
-  } else if (data.waitFor !== undefined) {
-    waitFor(data.waitFor.i, data.waitFor.opts[0], data.waitFor.opts[1], data.waitFor.opts[2]);
-  } else if (data.put !== undefined) {
-    put(data.put.i, data.put.opts[0]);
-  } else if (data.remove !== undefined) {
-    remove(data.remove.i, data.remove.opts[0]);
-  } else if (data.bulkDocs !== undefined) {
-    bulkDocs(data.bulkDocs.i, data.bulkDocs.opts[0], data.bulkDocs.opts[1]);
-  } else if (data.rev !== undefined) {
-    dbRev(data.rev.i);
-  } else if (data.md5 !== undefined) {
-    md5(data.md5.i, data.md5.opts[0]);
-  } else if (data.revsDiff !== undefined) {
-    revsDiff(data.revsDiff.i, data.revsDiff.opts[0]);
-  } else if (data.compact !== undefined) {
-    compact(data.compact.i);
-  } else if (data.changes !== undefined) {
-    changes(data.changes.i, data.changes.opts[0]);
-  } else if (data.init !== undefined) {
-    init(data.init);
-  } else {
-    throw new Error('Unknown event:', event);
+  switch (m) {
+    case 'get': get(i, o[0]); break;
+    case 'put': put(i, o[0]); break;
+    case 'all': all(i, o[0]); break;
+    case 'query': dbQuery(i, o[0]); break;
+    case 'waitFor': waitFor(i, o[0], o[1], o[2]); break;
+    case 'remove': remove(i, o[0]); break;
+    case 'register': register(o.q, o.k); break;
+    case 'unregister': unregister(o.k, o.d); break;
+    case 'bulk': bulk(i, o[0], o[1]); break;
+    case 'sync': sync(i, o[0]); break;
+    case 'rev': rev(i); break;
+    case 'md5': md5(i, o[0]); break;
+    case 'diff': diff(i, o[0]); break;
+    case 'compact': compact(i); break;
+    case 'changes': changes(i, o[0]); break;
+    case 'init': init(o); break;
+    default: throw new Error('Unknown event:', event);
   }
 }
 
