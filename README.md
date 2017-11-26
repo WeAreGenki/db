@@ -55,6 +55,10 @@ Something like this in your webpack config, e.g. `webpack.base.conf.js`:
 
 ### 3. Import the plugin
 
+> NOTE: See [configuration options below](#options).
+
+_PRO TIP: This is also a good place to put any custom database methods._
+
 Create a file to import the plugin and set your configuration, e.g. `services/db.js`:
 
 ```javascript
@@ -69,7 +73,7 @@ const db = new wDB.Database({
   WW,
   local: 'app',
   remote: 'http://localhost:4984/your_db_name',
-  vuexStore: store,
+  vuex: store,
   queries: [
     ['docs', [
       '_local/user',
@@ -80,8 +84,6 @@ const db = new wDB.Database({
 
 export default db;
 ```
-
-See [configuration options below](#options).
 
 ### 4. Inject into the vue root instance
 
@@ -133,7 +135,7 @@ db.get('your_doc_id').then((res) => {
 | `local` | `'app'` | No | `<string>` | The name for the local database or a URL. Names get appended to "\_pouch_" so the default turns in to `_pouch_app`. It's also possible to use a URL to bypass saving any data locally and only communicate with a remote database. |
 | `remote` | _undefined_ | No* | `<string>` | The URL to your remote database, e.g. 'https://your-site.com:5984/your_db'. *Only required if you want syncing functionality. |
 | `filter` | _undefined_ | No | _A PouchDB replication filter_ | See the filtered replication section [in the PouchDB docs](https://pouchdb.com/api.html#replication). |
-| `vuexStore` | _undefined_ | No* | `<vuex instance>` | A reference to your vuex store. *Only required when you want to use reactive queries or want a reactive sync status property. |
+| `vuex` | _undefined_ | No* | `<vuex instance>` | A reference to your vuex store. *Only required when you want to use reactive queries or want a reactive sync status property. |
 | `queries` | `[]` | No | _Valid input for Map(), see example below_ | Register reactive queries. See [queries section](#queries) below. |
 | `namespace` | `'db'` | No | `<string>` | Namespace for the vuex module. Determines the path to the vuex properties and methods. |
 | `createRemote` | `false` | No | `<Boolean>` | Create remote database if it doesn't already exist. Only works with CouchDB (_not_ Couchbase Sync Gateway). Default = assume remote database already exists. |

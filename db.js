@@ -80,7 +80,7 @@ class Database {
     local = 'app',
     remote,
     filter,
-    vuexStore,
+    vuex,
     queries = [],
     namespace = 'db',
     createRemote = false, // assume remote db already exists
@@ -90,7 +90,7 @@ class Database {
     pullCp = 'target',
     debug,
   }) {
-    this.vuexStore = vuexStore;
+    this.vuex = vuex;
     this.namespace = namespace;
     this.worker = typeof WW === 'function'
       ? new WW()
@@ -114,8 +114,8 @@ class Database {
 
   _init() {
     // set up vuex store
-    if (this.vuexStore !== undefined) {
-      this.vuexStore.registerModule(this.namespace, {
+    if (this.vuex !== undefined) {
+      this.vuex.registerModule(this.namespace, {
         namespaced: true,
         // state: {
         //   syncState: 'online', // online, offline, paused, error
@@ -350,7 +350,7 @@ class Database {
       rejects.delete(i);
     } else if (c !== undefined) {
       // commit new data to vuex
-      this.vuexStore.commit(c, d);
+      this.vuex.commit(c, d);
     } else if (r !== undefined) {
       // initial replication finished
       this.ready.resolve(res);
