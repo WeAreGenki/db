@@ -6,11 +6,13 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 2017,
     sourceType: 'module',
+    ecmaFeatures: {
+      experimentalObjectRestSpread: true,
+    },
   },
   env: {
     browser: true,
     es6: true,
-    worker: true,
     jest: true,
     'jest/globals': true
   },
@@ -20,12 +22,12 @@ module.exports = {
   ],
   extends: [
     'airbnb-base',
-    'plugin:import/errors',
     'plugin:jest/recommended',
   ],
   rules: {
     'import/extensions': ['error', 'always', { js: 'never' }],
     'no-underscore-dangle': 'off',
     'object-curly-spacing': ['error', 'always', { objectsInObjects: false }],
+    'object-curly-newline': ['error', { consistent: true }],
   }
 };

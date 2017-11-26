@@ -12,6 +12,7 @@
     "transpilation",
     "transpiled",
     "ufff",
+    "unregister",
     "upsert",
     "vuex",
     "websql"
