@@ -65,15 +65,15 @@ Create a file to import the plugin and set your configuration, e.g. `services/db
 import Vue from 'vue';
 import wDB from '@wearegenki/db';
 import WW from '@wearegenki/db/db.worker';
-import store from '../store'; // your vuex store
+import vuex from '../store'; // your vuex store
 
 Vue.use(wDB);
 
 const db = new wDB.Database({
   WW,
+  vuex,
   local: 'app',
   remote: 'http://localhost:4984/your_db_name',
-  vuex: store,
   queries: [
     ['docs', [
       '_local/user',
@@ -155,7 +155,7 @@ Queries are a way to get a set of documents which match certain criteria easily.
 
 ```javascript
 {
-  prefix: 'doc_id_prefix', // doc _id prefix to search
+  id: 'doc_id_prefix', // doc _id prefix to search
   filter: { // optional
     for: 'field_to_filter_by',
     when: '>', // optional, comparison operator (>, <, >=, <=, or when undefined ===)
@@ -185,7 +185,7 @@ export default {
     // simple array of "feedback" docs sorted by score
     getFeedbackList() {
       return this.$db.query({
-        type: 'feedback',
+        id: 'feedback',
         sort: 'score',
       });
     }
@@ -217,7 +217,7 @@ export default {
   methods: {
     async getTopBooks() {
       this.$db.register({
-        type: 'book',
+        id: 'book',
         filter: {
           for: 'publishDate',
           when: '>='
@@ -290,7 +290,7 @@ All methods run against the local database as the intent of this library is to p
 
 \#TODO
 
-#### `query({ type, filter, sort, limit, start })`
+#### `query({ id, filter, sort, limit, start })`
 
 \#TODO
 

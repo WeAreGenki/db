@@ -230,8 +230,8 @@ class Database {
    * @param {string} [sort] - x
    * @returns {Promise} - Containing the query results
    */
-  query({ type, filter, sort, limit, start }) {
-    return this._send('query', { t: type, f: filter, s: sort, l: limit, b: start });
+  query({ id, filter, sort, limit, start }) {
+    return this._send('query', { k: id, f: filter, s: sort, l: limit, b: start });
   }
 
   /**

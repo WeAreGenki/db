@@ -59,37 +59,36 @@ async function runQuery(key, query) {
       keys: query,
     });
   } else {
-    // type query with filter and sort
-    // XXX: t = type, f = filter, s = sort, l = limit, b = start
-    const { t, f, s, l, b } = query;
+    // custom query with filter and sort
+    const { id, filter, sort, limit, start } = query;
 
     let { rows } = await localDB.allDocs({
+      limit,
       include_docs: true,
-      startkey: b || t,
-      endkey: `${t}\ufff0`,
-      limit: l,
+      startkey: start || id,
+      endkey: `${id}\ufff0`,
     });
 
-    if (f !== undefined) {
+    if (filter !== undefined) {
       // TODO: Optimise for file size
-      if (f.when === undefined) {
-        rows = rows.filter(row => row.doc[f.for] === f.if);
-      } else if (f.when === '<=') {
-        rows = rows.filter(row => row.doc[f.for] <= f.if);
-      } else if (f.when === '>=') {
-        rows = rows.filter(row => row.doc[f.for] >= f.if);
-      } else if (f.when === '<') {
-        rows = rows.filter(row => row.doc[f.for] < f.if);
-      } else if (f.when === '>') {
-        rows = rows.filter(row => row.doc[f.for] > f.if);
+      if (filter.when === undefined) {
+        rows = rows.filter(row => row.doc[filter.for] === filter.if);
+      } else if (filter.when === '<=') {
+        rows = rows.filter(row => row.doc[filter.for] <= filter.if);
+      } else if (filter.when === '>=') {
+        rows = rows.filter(row => row.doc[filter.for] >= filter.if);
+      } else if (filter.when === '<') {
+        rows = rows.filter(row => row.doc[filter.for] < filter.if);
+      } else if (filter.when === '>') {
+        rows = rows.filter(row => row.doc[filter.for] > filter.if);
       }
     }
 
     // clean up results so we just have an array of docs
     res = rows.map(row => row.doc);
 
-    if (s !== undefined) {
-      res = res.sort((x, y) => x[s].localeCompare(y[s]));
+    if (sort !== undefined) {
+      res = res.sort((x, y) => x[sort].localeCompare(y[sort]));
     }
   }
   return { key, res };
@@ -308,8 +307,8 @@ function waitFor(i, docId, newOnly, timeout) {
   }, timeout);
 }
 
-async function dbQuery(i, { type, filter, sort }) {
-  const { res } = await runQuery(null, { type, filter, sort });
+async function dbQuery(i, { k, f, s, l, b }) {
+  const { res } = await runQuery(null, { id: k, filter: f, sort: s, limit: l, start: b });
   send({ i, res });
 }
 
