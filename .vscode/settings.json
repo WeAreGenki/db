@@ -1,4 +1,5 @@
 {
+  "cSpell.language": "en-GB",
   "cSpell.words": [
     "Builtins",
     "Firefox",
@@ -14,6 +15,7 @@
     "ufff",
     "unregister",
     "upsert",
+    "vmod",
     "vuex",
     "websql"
   ]
