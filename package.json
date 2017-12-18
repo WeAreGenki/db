@@ -1,6 +1,6 @@
 {
   "name": "@wearegenki/db",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Vue and vuex plugin for reactive PouchDB databases in a web worker",
   "repository": "https://github.com/WeAreGenki/db",
   "author": "Max Milton <max@wearegenki.com>",
