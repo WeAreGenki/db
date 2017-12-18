@@ -2,7 +2,6 @@
 
 module.exports = {
   root: true,
-  parser: 'babel-eslint',
   parserOptions: {
     ecmaVersion: 2017,
     sourceType: 'module',
@@ -12,7 +11,6 @@ module.exports = {
   },
   env: {
     browser: true,
-    es6: true,
     jest: true,
     'jest/globals': true
   },
