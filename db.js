@@ -36,7 +36,7 @@
 // TODO: Enable support for couchbase bulkDocs API
 //  ↳ REF: https://github.com/pouchdb/pouchdb/pull/6660
 
-import Vue from 'vue'; // eslint-disable-line
+let _Vue;
 
 let sequence = 0;
 // use Map for better performance (in Chrome, other browsers too as they optimise Map)
@@ -44,7 +44,9 @@ const resolves = new Map();
 const rejects = new Map();
 
 // vue plugin install hook
-function install(VueInstance) {
+function install(Vue) {
+  _Vue = Vue;
+
   // inject plugin into Vue instances as $db
   function inject() {
     const options = this.$options;
@@ -54,8 +56,8 @@ function install(VueInstance) {
       this.$db = options.parent.$db;
     }
   }
-  const usesInit = VueInstance.config._lifecycleHooks.indexOf('init') > -1;
-  VueInstance.mixin(usesInit ? { init: inject } : { beforeCreate: inject });
+  const usesInit = Vue.config._lifecycleHooks.indexOf('init') > -1;
+  Vue.mixin(usesInit ? { init: inject } : { beforeCreate: inject });
 }
 
 // create a promise but defer resolving or rejecting it until later
