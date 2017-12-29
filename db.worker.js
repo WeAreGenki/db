@@ -170,31 +170,10 @@ function init(opts) {
 
       if (opts.status) {
         syncDB
-          // FIXME: Remove unnecessary events -- they're bad for performance
-          .on('change', () => {
-            // console.log('SYNC CHANGE');
-            send({ s: true });
-          })
-          // .on('paused', () => {
-          //   console.log('SYNC PAUSED');
-          //   // send({ s: true }); // TODO: Not sure this event is of any value
-          // })
-          .on('active', () => {
-            // console.log('SYNC ACTIVE');
-            send({ s: true });
-          })
-          .on('denied', () => {
-            // console.log('SYNC DENIED');
-            send({ s: false });
-          })
-          // .on('complete', () => {
-          //   console.log('SYNC COMPLETE');
-          //   send({ s: false });
-          // })
-          .on('error', () => {
-            // console.log('SYNC ERROR');
-            send({ s: false });
-          });
+          .on('change', () => { send({ s: true }); })
+          .on('active', () => { send({ s: true }); })
+          .on('denied', () => { send({ s: false }); })
+          .on('error', () => { send({ s: false }); });
       }
     });
   }
