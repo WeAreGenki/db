@@ -11,8 +11,9 @@
     "db.worker.js"
   ],
   "scripts": {
-    "lint": "eslint ./db.js ./db.worker.js ./test --config .eslintrc.js",
-    "test": "node test/test.js"
+    "lint": "eslint *.js test/unit/specs --config .eslintrc.js",
+    "unit": "jest --config test/unit/jest.conf.js --coverage",
+    "test": "npm run lint && npm run unit"
   },
   "peerDependencies": {
     "vue": "^2.0.0",
@@ -30,9 +31,7 @@
   "devDependencies": {
     "@babel/core": "^7.0.0-beta.36",
     "@babel/plugin-transform-modules-commonjs": "^7.0.0-beta.36",
-    "@babel/plugin-transform-runtime": "^7.0.0-beta.36",
     "@babel/preset-env": "^7.0.0-beta.36",
-    "@babel/preset-stage-2": "^7.0.0-beta.36",
     "babel-core": "7.0.0-bridge.0",
     "babel-eslint": "^8.1.2",
     "babel-jest": "^22.0.4",
@@ -47,7 +46,7 @@
     "vue": "^2.5.13",
     "vue-jest": "^1.4.0",
     "vue-template-compiler": "^2.5.13",
-    "vue-test-utils": "1.0.0-beta.8",
+    "vue-test-utils": "1.0.0-beta.9",
     "vuex": "^3.0.1"
   },
   "engines": {
