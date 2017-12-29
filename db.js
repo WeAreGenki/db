@@ -33,15 +33,14 @@
 //    to run db queries at the same time -- could we have one syncing worker and
 //    multiple query workers?
 
-// TODO: Enable support for couchbase bulkDocs API
+// TODO: Enable support for the Couchbase bulkDocs API
 //  ↳ REF: https://github.com/pouchdb/pouchdb/pull/6660
 
-let _Vue;
-
-let sequence = 0;
 // use Map for better performance (in Chrome, other browsers too as they optimise Map)
 const resolves = new Map();
 const rejects = new Map();
+let _Vue;
+let sequence = 0;
 
 // vue plugin install hook
 function install(Vue) {
@@ -90,6 +89,7 @@ class Database {
     debounce = 300, // ms
     pushCp = 'source', // less net traffic for better performance -- REF: https://git.io/vFAI6
     pullCp = 'target',
+    status = false,
     debug,
   }) {
     this.vuex = vuex;
@@ -108,6 +108,7 @@ class Database {
       debounce,
       pullCp,
       pushCp,
+      status,
       debug,
     };
     this.ready = defer(); // promise returns once initial replication is finished
@@ -117,26 +118,22 @@ class Database {
   _init() {
     // set up vuex store
     if (this.vuex !== undefined) {
-      this.vuex.registerModule(this.namespace, {
+      const vuexMod = {
         namespaced: true,
-        // state: {
-        //   syncState: 'online', // online, offline, paused, error
-        // },
+        state: {},
         mutations: {
           /* eslint-disable no-return-assign, no-param-reassign */
-          // setSyncState: (state, syncState) => state.syncState = syncState,
-          addQuery: (state, payload) => Vue.set(state, payload.key, {}),
-          removeQuery: (state, payload) => Vue.delete(state, payload.key),
-          setQueryResult: (state, payload) => state[payload.key] = payload.data,
+          isOk: (state, ok) => state.ok = ok,
+          addQuery: (state, key) => _Vue.set(state, key, {}),
+          removeQuery: (state, key) => _Vue.delete(state, key),
+          setQueryResult: (state, { key, data }) => state[key] = data,
           /* eslint-enable no-return-assign, no-param-reassign */
         },
-        // actions: {
-        //   // use an action to change sync state to allow for custom functionality in future
-        //   changeSyncState({ commit }, newState) {
-        //     commit('setSyncState', newState);
-        //   },
-        // },
-      });
+      };
+
+      if (this.opts.status) vuexMod.state.ok = true;
+
+      this.vuex.registerModule(this.namespace, vuexMod);
     }
 
     // send options to initialise PouchDB in dedicated web worker thread
@@ -269,7 +266,7 @@ class Database {
       const newDoc = diff(doc);
 
       if (!newDoc) {
-        // if the diff returns falsy, we short-circuit as an optimization
+        // if the diff returns falsy, we short-circuit as an optimisation
         return { updated: false, rev: docRev, id: _id };
       }
 
@@ -337,7 +334,7 @@ class Database {
 
   // incoming message event handler
   _receive(event) {
-    const { i, res, rej, c, d, r } = JSON.parse(event.data);
+    const { i, res, rej, c, d, s, r } = JSON.parse(event.data);
 
     if (i !== undefined) {
       // resolve or reject promise if message contains res or rej
@@ -353,11 +350,14 @@ class Database {
     } else if (c !== undefined) {
       // commit new data to vuex
       this.vuex.commit(c, d);
+    } else if (s !== undefined) {
+      // commit new data to vuex
+      this.vuex.commit(`${this.opts.namespace}/isOk`, s);
     } else if (r !== undefined) {
       // initial replication finished
-      this.ready.resolve(res);
+      this.ready.resolve(r);
     } else {
-      throw new Error('Unknown event:', event);
+      throw new Error(`Unknown event: ${event}`);
     }
   }
 }
@@ -366,7 +366,7 @@ if (process.env.NODE_ENV !== 'production') {
   /**
    * Execute arbitrary code in web worker for development or testing
    *
-   * @param {string} code - Code to be run in eval(), will await any returned promise
+   * @param {string} code - Code to be eval()'d, will await any returned promise
    * @returns {} - No return value but does call console.log in the worker
    */
   Database.prototype.exec = function exec(code) {

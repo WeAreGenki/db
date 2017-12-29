@@ -19,8 +19,6 @@
  * limitations under the License.
  */
 
-/* eslint-env worker */
-
 import PouchDB from 'pouchdb-core';
 import AdapterIdb from 'pouchdb-adapter-idb';
 import AdapterHttp from 'pouchdb-adapter-http';
@@ -30,10 +28,11 @@ import { rev as getRev } from 'pouchdb-utils';
 import SparkMD5 from 'spark-md5';
 
 // initialise PouchDB plugins
-if (process.env.NODE_ENV === 'test') {
-  // in-memory database for testing
-  PouchDB.plugin(require('pouchdb-adapter-memory')); // eslint-disable-line
-}
+// TODO: Uncomment once we have testing in place
+// if (process.env.NODE_ENV === 'test') {
+//   // in-memory database for testing
+//   PouchDB.plugin(require('pouchdb-adapter-memory')); // eslint-disable-line
+// }
 PouchDB.plugin(AdapterIdb);
 PouchDB.plugin(AdapterHttp);
 PouchDB.plugin(Replication);
@@ -133,7 +132,7 @@ async function handleChange(change = {}, oneShot) {
 }
 
 function init(opts) {
-  config = opts; // used in sync()
+  config = opts;
 
   if (opts.debug !== undefined) PouchDB.debug.enable(opts.debug);
 
@@ -153,11 +152,11 @@ function init(opts) {
   if (opts.remote !== undefined && opts.sync) {
     // populate local database; pull docs from remote database
     PouchDB.replicate(remoteDB, localDB, { checkpoint: opts.pullCp }).on('complete', (info) => {
-      // update main thread that initial replication is fished
-      send({ r: 1, res: info });
+      // notify that initial replication is fished
+      send({ r: info });
 
       // keep local and remote databases in sync
-      PouchDB.sync(localDB, remoteDB, {
+      const syncDB = PouchDB.sync(localDB, remoteDB, {
         live: true,
         retry: true,
         filter: opts.filter,
@@ -168,6 +167,35 @@ function init(opts) {
           checkpoint: opts.pullCp,
         },
       });
+
+      if (opts.status) {
+        syncDB
+          // FIXME: Remove unnecessary events -- they're bad for performance
+          .on('change', () => {
+            // console.log('SYNC CHANGE');
+            send({ s: true });
+          })
+          // .on('paused', () => {
+          //   console.log('SYNC PAUSED');
+          //   // send({ s: true }); // TODO: Not sure this event is of any value
+          // })
+          .on('active', () => {
+            // console.log('SYNC ACTIVE');
+            send({ s: true });
+          })
+          .on('denied', () => {
+            // console.log('SYNC DENIED');
+            send({ s: false });
+          })
+          // .on('complete', () => {
+          //   console.log('SYNC COMPLETE');
+          //   send({ s: false });
+          // })
+          .on('error', () => {
+            // console.log('SYNC ERROR');
+            send({ s: false });
+          });
+      }
     });
   }
 
@@ -246,7 +274,7 @@ function register(query, key) {
   }
 
   // register a new reactive vuex object
-  send({ c: `${namespace}/addQuery`, d: { key }});
+  send({ c: `${namespace}/addQuery`, d: key });
 
   // run the query once to populate the vuex object
   handleChange({ key, query }, true);
@@ -259,7 +287,7 @@ function unregister(key, isDoc) {
     const docs = queries.get('docs');
     queries.set('docs', docs.filter(doc => doc !== key));
   }
-  send({ c: `${namespace}/removeQuery`, d: { key }});
+  send({ c: `${namespace}/removeQuery`, d: key });
 }
 
 function waitFor(i, docId, newOnly, timeout) {
@@ -343,7 +371,7 @@ function receive(event) {
     // execute arbitrary code for development or testing
     if (m === 'exec') {
       (async () => {
-        console.log('%c[EXEC]', 'color: #fff; background: red;', await eval(o)); // eslint-disable-line
+        console.log('%c[EXEC]', 'color: white; background: red;', await eval(o)); // eslint-disable-line
       })();
       return;
     }
@@ -366,7 +394,7 @@ function receive(event) {
     case 'compact': compact(i); break;
     case 'changes': changes(i, o[0]); break;
     case 'init': init(o); break;
-    default: throw new Error('Unknown event:', event);
+    default: throw new Error(`Unknown event: ${event}`);
   }
 }
 

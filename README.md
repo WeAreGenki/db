@@ -1,14 +1,14 @@
 # @wearegenki/db
 
-Vue and vuex plugin for reactive PouchDB databases in a web worker — https://wearegenki.com/pro-tools#FOSS
+Vue and vuex plugin for reactive PouchDB databases in a web worker — <https://wearegenki.com/pro#OpenSource>
 
 > NOTE: This package uses various ES6/ES7 features and needs to be transpiled to suit your browser compatibility policy. We don't handle any transpilation in the package itself, it's just the raw source code. You also need a way to load the web worker script.
 
 Included PouchDB plugins:
 
 1. pouchdb-adapter-idb
-2. pouchdb-adapter-http
-3. pouchdb-replication
+1. pouchdb-adapter-http
+1. pouchdb-replication
 
 ## Usage
 
@@ -132,10 +132,10 @@ db.get('your_doc_id').then((res) => {
 | Option | Default | Required | Value/s | Description |
 | --- | --- | :---: | --- | --- |
 | `WW` | _undefined_ | Yes | _The imported db.worker.js file OR path to file_ | Works with either `worker-loader` webpack plugin or a path to the `db.worker.js` file as a string. See [install instructions above](#1-install). |
-| `local` | `'app'` | No | `<string>` | The name for the local database or a URL. Names get appended to "\_pouch_" so the default turns in to `_pouch_app`. It's also possible to use a URL to bypass saving any data locally and only communicate with a remote database. |
-| `remote` | _undefined_ | No* | `<string>` | The URL to your remote database, e.g. 'https://your-site.com:5984/your_db'. *Only required if you want syncing functionality. |
+| `local` | `'app'` | No | `<string>` | The name for the local database. Names get appended to "\_pouch_" so the default turns in to `_pouch_app`. It's also possible to use a URL to bypass saving any data locally and only communicate with a remote database. |
+| `remote` | _undefined_ | No* | `<string>` | The URL to your remote database, e.g. `https://your-site.com:5984/your_db`. *Only required if you want syncing functionality. |
 | `filter` | _undefined_ | No | _A PouchDB replication filter_ | See the filtered replication section [in the PouchDB docs](https://pouchdb.com/api.html#replication). |
-| `vuex` | _undefined_ | No* | `<vuex instance>` | A reference to your vuex store. *Only required when you want to use reactive queries or want a reactive sync status property. |
+| `vuex` | _undefined_ | No* | `<vuex instance>` | A reference to your vuex store. *Only required when you want to use reactive queries or the status property. |
 | `queries` | `[]` | No | _Valid input for Map(), see example below_ | Register reactive queries. See [queries section](#queries) below. |
 | `namespace` | `'db'` | No | `<string>` | Namespace for the vuex module. Determines the path to the vuex properties and methods. |
 | `createRemote` | `false` | No | `<Boolean>` | Create remote database if it doesn't already exist. Only works with CouchDB (_not_ Couchbase Sync Gateway). Default = assume remote database already exists. |
@@ -143,11 +143,12 @@ db.get('your_doc_id').then((res) => {
 | `debounce` | `300` | No | `<Number>` | Amount of milliseconds to debounce between executing queries when document changes are detected. This helps to limit unnecessary CPU usage when a flood of documents are syncing from the remote database, like when a user first syncs, in which case we want to delay running queries until the network traffic settles or the sync is complete. |
 | `pushCp` | `'source'` | No | `'source'` \| `'target'` \| `<Boolean>` | Dictates where should checkpoints be saved. Default = only local database will save checkpoints, which results in less network traffic for better performance but at a small risk of data loss if the remote database is ever destroyed. For more information see [PouchDB docs](https://pouchdb.com/api.html#replication) and the [feature discussion on GitHub](https://github.com/pouchdb/pouchdb/issues/6308#issuecomment-282967868). |
 | `pullCp` | `'target'` | No | `'source'` \| `'target'` \| `<Boolean>` | Same as `pushCp` but for docs coming from remote. Default = only local database will save checkpoints. |
+| `status` | `false` | No | `<Boolean>` | Expose if the sync status is OK by adding a reactive vuex property `<namespace>/ok`. Only use this when necessary because it has a performance impact (due to its event listeners). |
 | `debug` | _undefined_ | No | `'*'` \| `'pouchdb:api'` \| `pouchdb:http` | Enable PouchDB's debug mode. |
 
 ## Queries
 
-Queries are a way to get a set of documents which match certain criteria easily. Use the `db.query()` method to do a one-time query. One-time queries are great, however, a key feature of this library is **reactive queries**, which can be set as a initial option or any time via the `db.register()` method. Pleasenote -this is different from mango queries — it's much simpler and has much better performance.
+Queries are a way to get a set of documents which match certain criteria easily. Use the `db.query()` method to do a one-time query. One-time queries are great, however, a key feature of this library is **reactive queries**, which can be set as a initial option or any time via the `db.register()` method. Please note this is different from mango queries — it's much simpler leading to much better performance.
 
 > NOTE: To use reactive queries a vuex store is required.
 
