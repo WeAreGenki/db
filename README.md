@@ -319,4 +319,4 @@ A promise that resolves once the initial remote to local replication has finishe
 
 -----
 
-© 2017 [We Are Genki](https://wearegenki.com)
+© 2018 [We Are Genki](https://wearegenki.com)
