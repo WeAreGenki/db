@@ -2,31 +2,14 @@
 
 module.exports = {
   root: true,
-  // parser: 'babel-eslint',
+  extends: [
+    '@wearegenki/eslint-config',
+  ],
   parserOptions: {
-    ecmaVersion: 2017,
+    ecmaVersion: 8,
     sourceType: 'module',
-    ecmaFeatures: {
-      experimentalObjectRestSpread: true,
-    },
   },
   env: {
     browser: true,
-    jest: true,
-    'jest/globals': true
   },
-  plugins: [
-    'jest',
-    'import',
-  ],
-  extends: [
-    'airbnb-base',
-    'plugin:jest/recommended',
-  ],
-  rules: {
-    'import/extensions': ['error', 'always', { js: 'never' }],
-    'no-underscore-dangle': 'off',
-    'object-curly-spacing': ['error', 'always', { objectsInObjects: false }],
-    'object-curly-newline': ['error', { consistent: true }],
-  }
 };
