@@ -1,6 +1,6 @@
 # @wearegenki/db
 
-Vue and vuex plugin for reactive PouchDB databases in a web worker — <https://wearegenki.com/pro#OpenSource>
+Vue plugin for reactive, offline capable databases — [npmjs.com/package/@wearegenki/db](https://www.npmjs.com/package/@wearegenki/db).
 
 > NOTE: This package uses various ES6/ES7 features and needs to be transpiled to suit your browser compatibility policy. We don't handle any transpilation in the package itself, it's just the raw source code. You also need a way to load the web worker script.
 
@@ -204,11 +204,9 @@ export default {
 import { mapState } from 'vuex';
 
 export default {
-  computed: {
-    ...mapState('db', [
-      'topBooks', // you can use the topBooks array in your vue template
-    ]),
-  },
+  computed: mapState('db', [
+    'topBooks', // you can use the topBooks array in your vue template
+  ]),
   created() {
     this.getTopBooks();
   },
