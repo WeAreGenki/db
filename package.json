@@ -1,6 +1,6 @@
 {
   "name": "@wearegenki/db",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Vue plugin for reactive, offline capable databases.",
   "keywords": [
     "vue",
