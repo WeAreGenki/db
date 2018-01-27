@@ -4,6 +4,8 @@ Vue plugin for reactive, offline capable databases — [npmjs.com/package/@weare
 
 > NOTE: This package uses various ES6/ES7 features and needs to be transpiled to suit your browser compatibility policy. We don't handle any transpilation in the package itself, it's just the raw source code. You also need a way to load the web worker script.
 
+## Overview
+
 Included PouchDB plugins:
 
 1. pouchdb-adapter-idb
@@ -12,69 +14,35 @@ Included PouchDB plugins:
 
 ## Usage
 
-> NOTE: These instructions assume you're using webpack with babel.
+> NOTE: These instructions assume you're using webpack.
 
-### 1. Install
+### 1. Install plugin and dependencies
 
-```bash
-yarn add @wearegenki/db
+```shell
+yarn add @wearegenki/db \
+  && yarn add --dev workerize-loader
 ```
 
-Also, to load the web worker file using webpack, install:
-
-```bash
-yarn add --dev worker-loader
-```
-
-### 2. Set up your build config
-
-Something like this in your webpack config, e.g. `webpack.base.conf.js`:
-
-```javascript
-  module: {
-    rules: [
-      {
-        test: /\.worker\.js$/,
-        loader: 'worker-loader',
-        options: {
-          name: utils.assetsPath('js/[name].[hash:7].js')
-        }
-      },
-      {
-        test: /\.js$/,
-        loader: 'babel-loader',
-        include: [
-          resolve('src'),
-          resolve('test'),
-          resolve('node_modules/@wearegenki/db'),
-        ],
-      },
-    ],
-  }
-```
-
-### 3. Import the plugin
+### 2. Import the plugin
 
 > NOTE: See [configuration options below](#options).
 
-_PRO TIP: This is also a good place to put any custom database methods._
+_PRO TIP: This is also a good place to put any custom database methods too._
 
 Create a file to import the plugin and set your configuration, e.g. `services/db.js`:
 
 ```javascript
 import Vue from 'vue';
-import wDB from '@wearegenki/db';
-import WW from '@wearegenki/db/db.worker';
+import Database from '@wearegenki/db';
 import vuex from '../store'; // your vuex store
 
-Vue.use(wDB);
+Vue.use(Database);
 
-const db = new wDB.Database({
-  WW,
+const db = new Database.Connection({
   vuex,
   local: 'app',
-  remote: 'http://localhost:4984/your_db_name',
-  queries: [
+  remote: 'http://localhost:4984/your_db_name', // optional
+  queries: [ // set up any reactive queries, optional
     ['docs', [
       '_local/user',
     ]],
@@ -85,7 +53,7 @@ const db = new wDB.Database({
 export default db;
 ```
 
-### 4. Inject into the vue root instance
+### 3. Inject into the root vue instance
 
 E.g. `main.js`:
 
@@ -103,7 +71,7 @@ new Vue({
 });
 ```
 
-### 5. Use in vue components or JS
+### 4. Use in vue components or JS
 
 > NOTE: Keep in mind most of the plugin methods return a Promise so you need to use `await` or `.then()` before you can access the resulting value.
 
@@ -127,11 +95,8 @@ db.get('your_doc_id').then((res) => {
 
 ## Options
 
-> NOTE: Only the `WW` option is required, all other options have sane defaults.
-
 | Option | Default | Required | Value/s | Description |
 | --- | --- | :---: | --- | --- |
-| `WW` | _undefined_ | Yes | _The imported db.worker.js file OR path to file_ | Works with either `worker-loader` webpack plugin or a path to the `db.worker.js` file as a string. See [install instructions above](#1-install). |
 | `local` | `'app'` | No | `<string>` | The name for the local database. Names get appended to "\_pouch_" so the default turns in to `_pouch_app`. It's also possible to use a URL to bypass saving any data locally and only communicate with a remote database. |
 | `remote` | _undefined_ | No* | `<string>` | The URL to your remote database, e.g. `https://your-site.com:5984/your_db`. *Only required if you want syncing functionality. |
 | `filter` | _undefined_ | No | _A PouchDB replication filter_ | See the filtered replication section [in the PouchDB docs](https://pouchdb.com/api.html#replication). |
@@ -217,11 +182,7 @@ export default {
     async getTopBooks() {
       this.$db.register({
         id: 'book',
-        filter: {
-          for: 'publishDate',
-          when: '>='
-          if: '2015-03-25'
-        },
+        filter: ['publishDate', '>=', '2015-03-25'],
         sort: 'title',
         limit: 10,
       }, 'topBooks');
@@ -233,87 +194,83 @@ export default {
 
 ## API Methods
 
-All methods run against the local database as the intent of this library is to provide "offline first" support to your vue projects.
+_PRO TIP: It's recommended to call methods on the local database so to provide "offline first" support for your projects._
 
-> NOTE: PouchDB built-in methods with low performance are purposely avoided. For functionality beyond what's here it's a better idea to write custom logic using these methods. You'll be fine with what's provided 95% of the time.
+### Direct database access
 
-### PouchDB built-in methods
+#### `local(method, ...opts)`
+
+Run a PouchDB method against the local database.
+
+\#TODO: Write description and give example.
+
+#### `remote(method, ...opts)`
+
+Run a PouchDB method against the remote database.
+
+\#TODO: Write description and give example.
+
+### Convenience wrapper methods
+
+For developer convenience the most common PouchDB methods are available directly.
 
 #### `get(_id)`
 
-\#TODO
+\#TODO: Write description and give example.
 
 #### `put(doc)`
 
-\#TODO
-
-#### `post(doc)`
-
-\#TODO
+\#TODO: Write description and give example.
 
 #### `remove(doc)`
 
-\#TODO
+\#TODO: Write description and give example.
 
-#### `allDocs(docs)`
+### Additional methods
 
-\#TODO
+Extra API methods unique to this plugin; not part of PouchDB.
 
-#### `bulkDocs(docs, opts)`
+#### `waitFor(_id, newOnly, timeout)`
 
-\#TODO
-
-#### `revsDiff(diff)`
-
-\#TODO
-
-#### `changes(opts)`
-
-\#TODO
-
-#### `compact()`
-
-\#TODO
-
-### Custom methods
-
-#### `waitFor(_id, newOnly, timeout = 45e3)`
-
-\#TODO
+\#TODO: Write description and give example.
 
 #### `register(query, key)`
 
-\#TODO
+\#TODO: Write description and give example.
 
 #### `unregister(key, isDoc)`
 
-\#TODO
+\#TODO: Write description and give example.
 
 #### `query({ id, filter, sort, limit, start })`
 
-\#TODO
+\#TODO: Write description and give example.
 
-#### `sync(retry = false)`
+#### `sync(retry)`
 
-\#TODO
+\#TODO: Write description and give example.
 
 #### `upsert(_id, diff)`
 
-\#TODO
+\#TODO: Write description and give example.
 
 #### `rev()`
 
-\#TODO
+\#TODO: Write description and give example.
 
 #### `md5(string)`
 
-\#TODO
+\#TODO: Write description and give example.
 
 ### Useful variables
 
 #### `ready`
 
-A promise that resolves once the initial remote to local replication has finished.
+A promise that resolves once the initial remote to local replication has finished. A.K.A. once the initial data has finished downloading.
+
+## Licence
+
+`@wearegenki/db` is an Apache-2.0 licensed open source project. See [LICENCE](https://github.com/WeAreGenki/db/blob/master/LICENCE).
 
 -----
 
