@@ -31,7 +31,7 @@
 
 import Worker from 'workerize-loader!./worker'; // eslint-disable-line
 
-/** @type {VueGlobal.component} */
+/** @type {VueComponent} */
 let _Vue;
 
 /** @type {Function} */
@@ -39,15 +39,14 @@ let isReady;
 
 /**
  * Vue plugin install hook
- * @param {VueGlobal.component} Vue
+ * @param {VueComponent} Vue
  */
 function install(Vue) {
   _Vue = Vue;
 
-  // * @this {VueConstructor}
   /**
    * Inject plugin into Vue instances as $db
-   * @this {VueGlobal.component}
+   * @this {VueComponent}
    */
   function inject() {
     const options = this.$options;
@@ -61,16 +60,26 @@ function install(Vue) {
   Vue.mixin(usesInit ? { init: inject } : { beforeCreate: inject });
 }
 
-class Database {
+class Connection {
+  // TODO: Use Vuex; @property {VuexStore} [vuex] A global Vuex store.
   /**
    * Creates a database environment instance
-   * @param {Object} 0$
-   * @param {string} 0$.remote
-   * @param {string} 0$.filter
-   * @param {Vuex.Store} 0$.vuex
-   * @param {Boolean} 0$.debug
+   * @typedef {object} ConnectionProps Constructor parameters.
+   * @property {string} local Name of the local database or a database endpoint URL.
+   * @property {string} [remote] The remote database endpoint URL.
+   * @property {(object|string)} [filter] PouchDB replication filter expression.
+   * @property {object} [vuex] A global Vuex store.
+   * @property {Array.<Worker.Query>} [queries]
+   * @property {string} [namespace]
+   * @property {boolean} [createRemote]
+   * @property {boolean} [sync]
+   * @property {number} [debounce]
+   * @property {string} [pushCp]
+   * @property {string} [pullCp]
+   * @property {boolean} [status]
+   * @property {boolean} [debug] Optional debugging console feedback.
    */
-  constructor({
+  constructor(/** @type {ConnectionProps} */{
     local = 'app',
     remote,
     filter,
@@ -102,12 +111,11 @@ class Database {
       debug,
     };
     this.worker = new Worker();
-    this.ready = new Promise((resolve) => {
-      isReady = resolve;
-    });
+    this.ready = new Promise((resolve) => isReady = resolve);
     this._init();
   }
 
+  /** @private */
   _init() {
     // set up vuex store
     if (this.vuex !== undefined) {
@@ -131,16 +139,14 @@ class Database {
 
     // handle web worker events
     this.worker.addEventListener('message', this._receive.bind(this));
-    this.worker.addEventListener('error', (err) => {
-      throw new Error(err);
-    });
+    this.worker.addEventListener('error', err => throw new Error(err));
 
     // initialise PouchDB in web worker
     this.worker.init(this.opts);
 
     // expose all available methods
     Object.keys(this.worker).forEach((key) => {
-      Database.prototype[key] = this.worker[key];
+      Connection.prototype[key] = this.worker[key];
     });
   }
 
@@ -148,24 +154,40 @@ class Database {
    * Convenience wrapper methods
    */
 
+  /**
+   * Get a document from the database.
+   * @param {object} docId The document _id.
+   * @returns {Promise<object>} The document object.
+   */
   get(docId) {
     return this.worker.local('get', docId);
   }
 
+  /**
+   * Put a document into the database (will error if _id already exists!).
+   * @param {object} doc The document you want to put in the database.
+   * @returns {Promise<object>}
+   */
   put(doc) {
     return this.worker.local('put', doc);
   }
 
+  /**
+   * Remove a doc from the database.
+   * @param {object} doc The document you want to remove from the database.
+   * @returns {Promise<object>}
+   */
   remove(doc) {
     return this.worker.local('remove', doc);
   }
 
   /**
-   * Insert doc if new or update doc if it exists (based on the PouchDB upsert plugin)
-   *
+   * Insert doc if new or update doc if it exists.
+   * Based on the PouchDB upsert plugin.
    * @see https://github.com/pouchdb/upsert/blob/master/index.js
-   * @param {string} _id - _id of the doc to edit
-   * @param {Function} diff - A function returning the changes requested
+   * @param {string} _id _id of the doc to edit.
+   * @param {Function} diff A function returning the changes requested.
+   * @returns {Promise<object>}
    */
   async upsert(_id, diff) {
     let doc;
@@ -196,7 +218,13 @@ class Database {
     }
   }
 
-  // part of upsert
+  /**
+   * Try to put a document in the database (only used in upsert()).
+   * @private
+   * @see upsert
+   * @param {object} doc
+   * @param {Function} diff
+   */
   async _tryPut(doc, diff) {
     try {
       const res = await this.worker.local('put', doc);
@@ -211,7 +239,11 @@ class Database {
     }
   }
 
-  // incoming message event handler
+  /**
+   * Incoming WebWorker message event handler.
+   * @private
+   * @param {MessageEvent} event An onmessage event from the web worker.
+   */
   _receive(event) {
     const { type, c, d, s, r } = event.data;
 
@@ -235,5 +267,5 @@ class Database {
 
 export default {
   install,
-  Database,
+  Connection,
 };
