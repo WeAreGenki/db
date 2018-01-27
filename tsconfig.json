@@ -14,7 +14,10 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
 
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "workerize-loader!./*": "./src/*"
+    }
   },
   "exclude": [
     "node_modules",
