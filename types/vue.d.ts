@@ -1,6 +1,4 @@
-/**
- * Extends interfaces in Vue.js
- */
+// Extends interfaces in Vue.js
 
 import Vue, { ComponentOptions } from 'vue';
 import { Connection } from './index';

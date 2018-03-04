@@ -29,6 +29,8 @@
 //    ↳ Some things will need to be moved around, e.g. waitFor -- the magic
 //      happens in the shared worker but is proxied via a dedicated worker
 
+/* tslint:disable:no-submodule-imports no-invalid-this */
+
 import Worker from 'workerize-loader!./worker'; // eslint-disable-line
 
 /** @type {VueComponent} */
@@ -111,7 +113,7 @@ class Connection {
       debug,
     };
     this.worker = new Worker();
-    this.ready = new Promise((resolve) => isReady = resolve);
+    this.ready = new Promise((resolve) => { isReady = resolve; });
     this._init();
   }
 
@@ -123,12 +125,10 @@ class Connection {
         namespaced: true,
         state: {},
         mutations: {
-          /* eslint-disable no-return-assign, no-param-reassign */
           isOk: (state, ok) => (state.ok = ok),
           addQuery: (state, key) => _Vue.set(state, key, {}),
           removeQuery: (state, key) => _Vue.delete(state, key),
           setQueryResult: (state, { key, data }) => (state[key] = data),
-          /* eslint-enable no-return-assign, no-param-reassign */
         },
       };
 
@@ -139,7 +139,7 @@ class Connection {
 
     // handle web worker events
     this.worker.addEventListener('message', this._receive.bind(this));
-    this.worker.addEventListener('error', err => throw new Error(err));
+    this.worker.addEventListener('error', (err) => { throw new Error(err); });
 
     // initialise PouchDB in web worker
     this.worker.init(this.opts);

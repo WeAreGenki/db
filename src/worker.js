@@ -79,7 +79,6 @@ function compare(valueOne, valueTwo, operator) {
  * @property {string} [sort]
  * @property {number} [limit]
  * @property {string} [start]
- * @alias module:webworker.Query
  */
 
 /**
