@@ -289,7 +289,7 @@
   dependencies:
     "@babel/helper-module-transforms" "7.0.0-beta.40"
 
-"@babel/plugin-transform-modules-commonjs@7.0.0-beta.40", "@babel/plugin-transform-modules-commonjs@^7.0.0-beta.40":
+"@babel/plugin-transform-modules-commonjs@7.0.0-beta.40":
   version "7.0.0-beta.40"
   resolved "https://registry.yarnpkg.com/@babel/plugin-transform-modules-commonjs/-/plugin-transform-modules-commonjs-7.0.0-beta.40.tgz#a85f8c311f498a94a45531cc4ed5ff98b338a70a"
   dependencies:
@@ -362,7 +362,7 @@
     "@babel/helper-regex" "7.0.0-beta.40"
     regexpu-core "^4.1.3"
 
-"@babel/preset-env@^7.0.0-beta.40":
+"@babel/preset-env@7.0.0-beta.40":
   version "7.0.0-beta.40"
   resolved "https://registry.yarnpkg.com/@babel/preset-env/-/preset-env-7.0.0-beta.40.tgz#713292f9e410f76b3f4301330756c89343c4b2e4"
   dependencies:
@@ -856,7 +856,7 @@ babel-messages@^6.23.0:
   dependencies:
     babel-runtime "^6.22.0"
 
-babel-plugin-dynamic-import-node@^1.2.0:
+babel-plugin-dynamic-import-node@1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/babel-plugin-dynamic-import-node/-/babel-plugin-dynamic-import-node-1.2.0.tgz#f91631e703e0595e47d4beafbb088576c87fbeee"
   dependencies:
@@ -2622,7 +2622,7 @@ jest-worker@^22.2.2:
   dependencies:
     merge-stream "^1.0.1"
 
-jest@^22.4.2:
+jest@22.4.2:
   version "22.4.2"
   resolved "https://registry.yarnpkg.com/jest/-/jest-22.4.2.tgz#34012834a49bf1bdd3bc783850ab44e4499afc20"
   dependencies:
