@@ -24,9 +24,11 @@
   ],
   "typings": "types/index.d.ts",
   "scripts": {
-    "lint": "eslint *.js test/unit/specs --config .eslintrc.js",
-    "XXX_unit": "jest --config test/unit/jest.conf.js --coverage",
-    "XXX_test": "npm run lint && npm run unit"
+    "lint": "eslint --ignore-path .gitignore --ext .js src test",
+    "pretest": "npm run lint",
+    "test": "jest --config test/jest.config.js --coverage",
+    "test-ci": "yarn test --runInBand",
+    "test:watch": "yarn test --notify --watch"
   },
   "peerDependencies": {
     "vue": "^2.0.0",
@@ -43,9 +45,12 @@
     "spark-md5": "^3.0.0"
   },
   "devDependencies": {
+    "@babel/plugin-transform-modules-commonjs": "^7.0.0-beta.40",
+    "@babel/preset-env": "^7.0.0-beta.40",
     "@types/pouchdb": "6.3.2",
     "@wearegenki/eslint-config": "0.5.0-alpha.f1eec7f5",
     "@wearegenki/test": "0.5.0-alpha.f1eec7f5",
+    "babel-plugin-dynamic-import-node": "^1.2.0",
     "eslint": "4.18.2",
     "jest": "^22.4.2"
   }
