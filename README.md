@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/WeAreGenki/db.svg?branch=master)](https://travis-ci.org/WeAreGenki/db)
+[![Known Vulnerabilities](https://snyk.io/test/github/WeAreGenki/db/badge.svg)](https://snyk.io/test/github/WeAreGenki/db)
+
 # @wearegenki/db
 
 Vue plugin for reactive, offline capable databases — [npmjs.com/package/@wearegenki/db](https://www.npmjs.com/package/@wearegenki/db).
