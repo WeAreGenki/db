@@ -324,7 +324,7 @@ export function waitFor(docId, newOnly, timeout) {
     docIds.forEach((docId2) => {
       localDB.get(docId2)
         .then(filterFun)
-        .catch(() => {}); // no-op; keep looking in changes feed
+        .catch(() => { /* no op */ }); // keep looking in changes feed
     });
   }
 
