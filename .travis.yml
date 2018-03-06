@@ -1,0 +1,17 @@
+language: node_js
+
+node_js:
+  - "node"
+  - "lts/*"
+
+sudo: false
+
+branches:
+  only:
+    - master
+    - devel
+
+cache: yarn
+
+script:
+  - yarn run test-ci
