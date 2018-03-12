@@ -3,6 +3,7 @@
   "version": "0.7.0",
   "description": "Vue plugin for reactive, offline capable databases.",
   "repository": "https://github.com/WeAreGenki/db",
+  "bugs": "https://github.com/WeAreGenki/db/issues",
   "homepage": "https://wearegenki.com/pro#OpenSource",
   "author": "Max Milton <max@wearegenki.com>",
   "license": "Apache-2.0",
