@@ -1,17 +1,18 @@
 language: node_js
 
 node_js:
-  - "node"
-  - "lts/*"
-
-sudo: false
+  - node
+  - lts/*
 
 branches:
   only:
     - master
     - dev
 
-cache: yarn
+cache:
+  yarn: true
+  directories:
+    - node_modules
 
 script:
   - yarn run test-ci
