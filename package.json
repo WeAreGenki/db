@@ -2,6 +2,10 @@
   "name": "@wearegenki/db",
   "version": "0.7.0",
   "description": "Vue plugin for reactive, offline capable databases.",
+  "repository": "https://github.com/WeAreGenki/db",
+  "homepage": "https://wearegenki.com/pro#OpenSource",
+  "author": "Max Milton <max@wearegenki.com>",
+  "license": "Apache-2.0",
   "keywords": [
     "vue",
     "vue-plugin",
@@ -13,10 +17,6 @@
     "couchbase",
     "wearegenki"
   ],
-  "repository": "https://github.com/WeAreGenki/db",
-  "homepage": "https://wearegenki.com/pro#OpenSource",
-  "author": "Max Milton <max@wearegenki.com>",
-  "license": "Apache-2.0",
   "main": "src/index.js",
   "files": [
     "src",
