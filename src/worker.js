@@ -23,7 +23,7 @@ import AdapterIdb from 'pouchdb-adapter-idb';
 import AdapterHttp from 'pouchdb-adapter-http';
 import Replication from 'pouchdb-replication';
 import debounce from 'lodash.debounce';
-import { rev } from 'pouchdb-utils';
+import { rev as _rev } from 'pouchdb-utils';
 import SparkMD5 from 'spark-md5';
 
 // initialise PouchDB plugins
@@ -110,9 +110,9 @@ async function runQuery(key, q) {
     if (filter !== undefined) {
       rows = rows.filter(row =>
         // filter[0] = compare field
-        // filter[1] = compare operator
-        // filter[2] = compare value
-        compare(row.doc[filter[0]], filter[2], filter[1]));
+        // filter[1] = compare operator OR value
+        // filter[2] = compare value OR null
+        compare(row.doc[filter[0]], filter[2] || filter[1], filter[1]));
     }
 
     // clean up results so we just have an array of docs
@@ -375,4 +375,6 @@ export function md5(input) {
  * Generate a random PouchDB document revision ID.
  * @returns {string} A document revision ID.
  */
-export { rev };
+export function rev() {
+  return _rev();
+}

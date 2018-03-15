@@ -128,11 +128,11 @@ Queries are a way to get a set of documents which match certain criteria easily.
 ```javascript
 {
   id: 'doc_id_prefix', // doc _id prefix to search
-  filter: { // optional
-    for: 'field_to_filter_by',
-    when: '>', // optional, comparison operator (>, <, >=, <=, or when undefined ===)
-    if: 'matching_value',
-  },
+  filter: [ // optional
+    'field_to_filter_by',
+    '>', // comparison operator (>, <, >=, <=, or when undefined ===)
+    'matching_value',
+  ],
   sort: 'field_to_sort_by', // optional
   limit: 100, // optional
   start: 'doc_id_prefix', // optional, doc _id prefix to start search from (and end at `prefix`) for pagination
