@@ -191,7 +191,7 @@ export function init(opts) {
 
   if (opts.remote !== undefined && opts.sync) {
     // populate local database; pull docs from remote database
-    PouchDB.replicate(remoteDB, localDB, { checkpoint: opts.pullCp }).on('complete', (info) => {
+    PouchDB.replicate(remoteDB, localDB, { checkpoint: opts.pullCp }).then((info) => {
       // notify that initial replication is fished
       postMessage({ r: info });
 
@@ -205,6 +205,7 @@ export function init(opts) {
       });
 
       if (opts.status) {
+        // TODO: Decide whether to keep this functionality; is this even useful?
         syncDB
           .on('change', () => postMessage({ s: true }))
           .on('active', () => postMessage({ s: true }))
@@ -337,8 +338,7 @@ export function waitFor(docId, newOnly, timeout) {
 
 /**
  * Query database and filter and sort the results.
- * @param {object[]} params Query parameters.
- * @param {Query} params[]
+ * @param {Query} $0 Query parameters.
  * @returns {Promise<object>} - Containing the query results.
  */
 export async function query({ id, filter, sort, limit, start }) {
