@@ -1,5 +1,8 @@
-[![Build Status](https://travis-ci.org/WeAreGenki/db.svg?branch=master)](https://travis-ci.org/WeAreGenki/db)
-[![Known Vulnerabilities](https://snyk.io/test/github/WeAreGenki/db/badge.svg)](https://snyk.io/test/github/WeAreGenki/db)
+<!-- markdownlint-disable first-line-h1 -->
+
+[![Build status](https://img.shields.io/travis/WeAreGenki/db.svg)](https://travis-ci.org/WeAreGenki/db)
+[![NPM version](https://img.shields.io/npm/v/@wearegenki/db.svg)](https://www.npmjs.com/package/@wearegenki/db)
+[![Licence](https://img.shields.io/npm/l/@wearegenki/db.svg)](https://github.com/WeAreGenki/db/blob/master/LICENCE)
 
 # @wearegenki/db
 
