@@ -1,6 +1,6 @@
 {
   "name": "@wearegenki/db",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Vue plugin for reactive, offline capable databases.",
   "repository": "https://github.com/WeAreGenki/db",
   "bugs": "https://github.com/WeAreGenki/db/issues",
