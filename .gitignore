@@ -1,6 +1,5 @@
-node_modules/
-dist/
-npm-debug.log*
+/dist/
+/node_modules/
+/test/coverage/
+*.log
 package-lock.json*
-yarn-debug.log*
-yarn-error.log*
