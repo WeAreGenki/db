@@ -52,7 +52,7 @@
     "@wearegenki/test": "0.5.1",
     "codecov": "3.0.0",
     "eslint": "4.19.0",
-    "jest": "22.4.2",
+    "jest": "22.4.3",
     "vue": "2.5.16",
     "vuex": "3.0.1",
     "webpack": "3.11.0",
