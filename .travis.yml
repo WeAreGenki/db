@@ -22,5 +22,6 @@ install:
   - yarn install --frozen-lockfile
 
 script:
+  - yarn run lint
   - yarn run test-ci
   - codecov

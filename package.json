@@ -26,7 +26,6 @@
   "typings": "types/index.d.ts",
   "scripts": {
     "lint": "eslint --ignore-path .gitignore --ext .js src test",
-    "pretest": "npm run lint",
     "test": "jest",
     "test-ci": "yarn test --coverage --runInBand --ci",
     "test:watch": "yarn test --coverage --notify --watch"
