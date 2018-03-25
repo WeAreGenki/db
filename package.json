@@ -48,7 +48,7 @@
   },
   "devDependencies": {
     "@types/pouchdb": "6.3.2",
-    "@wearegenki/eslint-config": "0.5.1",
+    "@wearegenki/eslint-config": "0.7.0",
     "@wearegenki/test": "0.5.1",
     "codecov": "3.0.0",
     "eslint": "4.19.0",
