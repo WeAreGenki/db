@@ -829,9 +829,9 @@
   version "0.0.30"
   resolved "https://registry.yarnpkg.com/@types/strip-json-comments/-/strip-json-comments-0.0.30.tgz#9aa30c04db212a9a0649d6ae6fd50accc40748a1"
 
-"@vue/test-utils@1.0.0-beta.12":
-  version "1.0.0-beta.12"
-  resolved "https://registry.yarnpkg.com/@vue/test-utils/-/test-utils-1.0.0-beta.12.tgz#c020d5e7566d176a654e44c88d303743ad19b3cf"
+"@vue/test-utils@1.0.0-beta.13":
+  version "1.0.0-beta.13"
+  resolved "https://registry.yarnpkg.com/@vue/test-utils/-/test-utils-1.0.0-beta.13.tgz#309dc50d2a55ac9facf781f62bbd236475ba5033"
   dependencies:
     lodash "^4.17.4"
 
@@ -847,18 +847,18 @@
     eslint-plugin-jest "^21.15.0"
     eslint-plugin-vue "^4.4.0"
 
-"@wearegenki/test-vue@0.7.0":
-  version "0.7.0"
-  resolved "https://registry.yarnpkg.com/@wearegenki/test-vue/-/test-vue-0.7.0.tgz#bbf5bd4ddd5ecaf6ad0fba35e2e5d1e6ba45000b"
+"@wearegenki/test-vue@0.8.0":
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/@wearegenki/test-vue/-/test-vue-0.8.0.tgz#3d0c7179bafe4b39df1e31eae1d88e9a4127cc81"
   dependencies:
     "@types/jest" "22.2.2"
-    "@vue/test-utils" "1.0.0-beta.12"
+    "@vue/test-utils" "1.0.0-beta.13"
     jest-serializer-vue "1.0.0"
     vue-jest "2.3.0"
 
-"@wearegenki/test@0.7.0":
-  version "0.7.0"
-  resolved "https://registry.yarnpkg.com/@wearegenki/test/-/test-0.7.0.tgz#3f88824747b0a6fee0f539a0e8728f93f2766bc8"
+"@wearegenki/test@0.8.0":
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/@wearegenki/test/-/test-0.8.0.tgz#e9ba503bfa5226b8251a6a2a963f87e06ca087ef"
   dependencies:
     "@babel/core" "^7.0.0-beta.42"
     "@babel/plugin-transform-modules-commonjs" "^7.0.0-beta.42"
@@ -873,7 +873,7 @@
     babel-plugin-dynamic-import-node-babel-7 "^2.0.7"
     chalk "^2.3.2"
     jest-environment-node "^22.4.3"
-    jest-puppeteer "^2.2.0"
+    jest-puppeteer "^2.2.1"
     node-static "^0.7.10"
     portfinder "^1.0.13"
 
@@ -3756,7 +3756,7 @@ jest-mock@^22.4.3:
   version "22.4.3"
   resolved "https://registry.yarnpkg.com/jest-mock/-/jest-mock-22.4.3.tgz#f63ba2f07a1511772cdc7979733397df770aabc7"
 
-jest-puppeteer@^2.2.0:
+jest-puppeteer@^2.2.1:
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/jest-puppeteer/-/jest-puppeteer-2.2.1.tgz#1b27eb1f8ea9226e9b48eb2f34caa430af167d7c"
   dependencies:
@@ -6187,7 +6187,7 @@ uglify-to-browserify@~1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/uglify-to-browserify/-/uglify-to-browserify-1.0.2.tgz#6e0924d6bda6b5afe349e39a6d632850a0f882b7"
 
-uglifyjs-webpack-plugin@^1.1.1:
+uglifyjs-webpack-plugin@^1.2.4:
   version "1.2.4"
   resolved "https://registry.yarnpkg.com/uglifyjs-webpack-plugin/-/uglifyjs-webpack-plugin-1.2.4.tgz#5eec941b2e9b8538be0a20fc6eda25b14c7c1043"
   dependencies:
@@ -6430,9 +6430,9 @@ webpack-sources@^1.0.1, webpack-sources@^1.1.0:
     source-list-map "^2.0.0"
     source-map "~0.6.1"
 
-webpack@4.2.0:
-  version "4.2.0"
-  resolved "https://registry.yarnpkg.com/webpack/-/webpack-4.2.0.tgz#a4f80807651a0e611bb09609600dc266262efcc1"
+webpack@4.4.1:
+  version "4.4.1"
+  resolved "https://registry.yarnpkg.com/webpack/-/webpack-4.4.1.tgz#b0105789890c28bfce9f392623ef5850254328a4"
   dependencies:
     acorn "^5.0.0"
     acorn-dynamic-import "^3.0.0"
@@ -6450,7 +6450,7 @@ webpack@4.2.0:
     node-libs-browser "^2.0.0"
     schema-utils "^0.4.2"
     tapable "^1.0.0"
-    uglifyjs-webpack-plugin "^1.1.1"
+    uglifyjs-webpack-plugin "^1.2.4"
     watchpack "^1.5.0"
     webpack-sources "^1.0.1"
 
