@@ -829,9 +829,9 @@
   version "0.0.30"
   resolved "https://registry.yarnpkg.com/@types/strip-json-comments/-/strip-json-comments-0.0.30.tgz#9aa30c04db212a9a0649d6ae6fd50accc40748a1"
 
-"@vue/test-utils@1.0.0-beta.12":
-  version "1.0.0-beta.12"
-  resolved "https://registry.yarnpkg.com/@vue/test-utils/-/test-utils-1.0.0-beta.12.tgz#c020d5e7566d176a654e44c88d303743ad19b3cf"
+"@vue/test-utils@1.0.0-beta.13":
+  version "1.0.0-beta.13"
+  resolved "https://registry.yarnpkg.com/@vue/test-utils/-/test-utils-1.0.0-beta.13.tgz#309dc50d2a55ac9facf781f62bbd236475ba5033"
   dependencies:
     lodash "^4.17.4"
 
@@ -847,12 +847,12 @@
     eslint-plugin-jest "^21.15.0"
     eslint-plugin-vue "^4.4.0"
 
-"@wearegenki/test-vue@0.7.0":
-  version "0.7.0"
-  resolved "https://registry.yarnpkg.com/@wearegenki/test-vue/-/test-vue-0.7.0.tgz#bbf5bd4ddd5ecaf6ad0fba35e2e5d1e6ba45000b"
+"@wearegenki/test-vue@0.8.0":
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/@wearegenki/test-vue/-/test-vue-0.8.0.tgz#3d0c7179bafe4b39df1e31eae1d88e9a4127cc81"
   dependencies:
     "@types/jest" "22.2.2"
-    "@vue/test-utils" "1.0.0-beta.12"
+    "@vue/test-utils" "1.0.0-beta.13"
     jest-serializer-vue "1.0.0"
     vue-jest "2.3.0"
 
