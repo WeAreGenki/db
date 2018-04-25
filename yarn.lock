@@ -702,7 +702,11 @@
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@types/events/-/events-1.2.0.tgz#81a6731ce4df43619e5c8c945383b3e62a89ea86"
 
-"@types/jest@22.2.2", "@types/jest@^22.2.2":
+"@types/jest@22.2.3":
+  version "22.2.3"
+  resolved "https://registry.yarnpkg.com/@types/jest/-/jest-22.2.3.tgz#0157c0316dc3722c43a7b71de3fdf3acbccef10d"
+
+"@types/jest@^22.2.2":
   version "22.2.2"
   resolved "https://registry.yarnpkg.com/@types/jest/-/jest-22.2.2.tgz#afe5dacbd00d65325f52da0ed3e76e259629ac9d"
 
@@ -839,9 +843,9 @@
   version "0.0.30"
   resolved "https://registry.yarnpkg.com/@types/strip-json-comments/-/strip-json-comments-0.0.30.tgz#9aa30c04db212a9a0649d6ae6fd50accc40748a1"
 
-"@vue/test-utils@1.0.0-beta.13":
-  version "1.0.0-beta.13"
-  resolved "https://registry.yarnpkg.com/@vue/test-utils/-/test-utils-1.0.0-beta.13.tgz#309dc50d2a55ac9facf781f62bbd236475ba5033"
+"@vue/test-utils@1.0.0-beta.15":
+  version "1.0.0-beta.15"
+  resolved "https://registry.yarnpkg.com/@vue/test-utils/-/test-utils-1.0.0-beta.15.tgz#9f8d85b9f2312217c81d72eba97e176fba23da09"
   dependencies:
     lodash "^4.17.4"
 
@@ -857,14 +861,14 @@
     eslint-plugin-jest "^21.15.0"
     eslint-plugin-vue "^4.4.0"
 
-"@wearegenki/test-vue@0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@wearegenki/test-vue/-/test-vue-0.10.0.tgz#91eaff62c64e980d80ac5d0429259ca91d41857f"
+"@wearegenki/test-vue@0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@wearegenki/test-vue/-/test-vue-0.11.0.tgz#2602852cb81f3798a1ac9edb518f49e382df51f7"
   dependencies:
-    "@types/jest" "22.2.2"
-    "@vue/test-utils" "1.0.0-beta.13"
+    "@types/jest" "22.2.3"
+    "@vue/test-utils" "1.0.0-beta.15"
     jest-serializer-vue "1.0.0"
-    vue-jest "2.4.1"
+    vue-jest "2.5.0"
 
 "@wearegenki/test@0.10.0":
   version "0.10.0"
@@ -6343,9 +6347,9 @@ vue-eslint-parser@^2.0.3:
     esquery "^1.0.0"
     lodash "^4.17.4"
 
-vue-jest@2.4.1:
-  version "2.4.1"
-  resolved "https://registry.yarnpkg.com/vue-jest/-/vue-jest-2.4.1.tgz#50e2435cd9b298d996f71bbef759aceb33890812"
+vue-jest@2.5.0:
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/vue-jest/-/vue-jest-2.5.0.tgz#9dcf902720fa47ba98e60eb771a02c13e6b4eb56"
   dependencies:
     babel-plugin-transform-es2015-modules-commonjs "^6.26.0"
     chalk "^2.1.0"
