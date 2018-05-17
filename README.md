@@ -1,5 +1,9 @@
 <!-- markdownlint-disable first-line-h1 -->
 
+**WARNING: This project is no longer maintained. We decided to migrate away from Vue to [Svelte](https://svelte.technology). See [`minna-ui`](https://github.com/WeAreGenki/minna-ui),  our new web UI framework.**
+
+-----
+
 [![Build status](https://img.shields.io/travis/WeAreGenki/db.svg)](https://travis-ci.org/WeAreGenki/db)
 [![NPM version](https://img.shields.io/npm/v/@wearegenki/db.svg)](https://www.npmjs.com/package/@wearegenki/db)
 [![Licence](https://img.shields.io/npm/l/@wearegenki/db.svg)](https://github.com/WeAreGenki/db/blob/master/LICENCE)
