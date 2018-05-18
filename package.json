@@ -50,7 +50,7 @@
     "@types/pouchdb": "6.3.2",
     "@wearegenki/eslint-config": "0.10.0",
     "@wearegenki/test": "0.10.0",
-    "@wearegenki/test-vue": "0.10.0",
+    "@wearegenki/test-vue": "0.11.0",
     "babel-core": "7.0.0-bridge.0",
     "codecov": "3.0.0",
     "eslint": "4.19.1",
